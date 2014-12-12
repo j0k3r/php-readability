@@ -24,7 +24,7 @@
         "role": "Developer (original JS version)"
     }],
     "require": {
-        "php": ">=5.2",
+        "php": ">=5.4",
         "ext-tidy": ">=1.2"
     },
     "autoload": {
