@@ -20,14 +20,6 @@ class ReadabilityTested extends Readability
 
 class ReadabilityTest extends \PHPUnit_Framework_TestCase
 {
-    protected function setUp()
-    {
-    }
-
-    protected function tearDown()
-    {
-    }
-
     public function testConstructDefault()
     {
         $readability = new ReadabilityTested('');
