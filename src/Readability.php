@@ -52,6 +52,7 @@ class Readability
     public $revertForcedParagraphElements = true;
     public $articleTitle;
     public $articleContent;
+    public $original_html;
     public $dom;
     public $url = null; // optional - URL where HTML was retrieved
     public $lightClean = true; // preserves more content (experimental)
@@ -179,7 +180,7 @@ class Readability
             $this->debugText .= 'Tidying document'."\n";
             $tidy = tidy_parse_string($html, $this->tidy_config, 'UTF8');
             if (tidy_clean_repair($tidy)) {
-                $original_html = $html;
+                $this->original_html = $html;
                 $this->tidied = true;
                 $html = $tidy->value;
                 $html = preg_replace('/<html[^>]+>/i', '<html>', $html);
@@ -258,7 +259,7 @@ class Readability
         if ($this->bodyCache == null) {
             $this->bodyCache = '';
             foreach ($bodyElems as $bodyNode) {
-                $this->bodyCache += $bodyNode->innerHTML;
+                $this->bodyCache .= trim($bodyNode->innerHTML);
             }
         }
         if ($bodyElems->length > 0 && $this->body == null) {
