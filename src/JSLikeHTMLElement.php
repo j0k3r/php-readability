@@ -3,7 +3,7 @@
 namespace Readability;
 
 /**
- * JavaScript-like HTML DOM Element
+ * JavaScript-like HTML DOM Element.
  *
  * This class extends PHP's DOMElement to allow
  * users to get and set the innerHTML property of
@@ -31,12 +31,14 @@ namespace Readability;
  *     echo $doc->saveXML();
  *
  * @author Keyvan Minoukadeh - http://www.keyvan.net - keyvan@keyvan.net
+ *
  * @see http://fivefilters.org (the project this was written for)
  */
 class JSLikeHTMLElement extends \DOMElement
 {
     /**
-     * Used for setting innerHTML like it's done in JavaScript:
+     * Used for setting innerHTML like it's done in JavaScript:.
+     *
      * @code
      * $div->innerHTML = '<h2>Chapter 2</h2><p>The story begins...</p>';
      * @endcode
@@ -45,7 +47,7 @@ class JSLikeHTMLElement extends \DOMElement
     {
         if ($name == 'innerHTML') {
             // first, empty the element
-            for ($x=$this->childNodes->length-1; $x>=0; $x--) {
+            for ($x = $this->childNodes->length - 1; $x >= 0; $x--) {
                 $this->removeChild($this->childNodes->item($x));
             }
             // $value holds our new inner HTML
@@ -86,7 +88,8 @@ class JSLikeHTMLElement extends \DOMElement
     }
 
     /**
-     * Used for getting innerHTML like it's done in JavaScript:
+     * Used for getting innerHTML like it's done in JavaScript:.
+     *
      * @code
      * $string = $div->innerHTML;
      * @endcode
@@ -105,7 +108,7 @@ class JSLikeHTMLElement extends \DOMElement
         $trace = debug_backtrace();
         trigger_error('Undefined property via __get(): '.$name.' in '.$trace[0]['file'].' on line '.$trace[0]['line'], E_USER_NOTICE);
 
-        return null;
+        return;
     }
 
     public function __toString()

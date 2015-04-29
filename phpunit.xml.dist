@@ -19,11 +19,14 @@
 
     <filter>
         <whitelist>
-            <directory>./src/TubeLink/</directory>
+            <directory>./src/</directory>
             <exclude>
                 <directory>./tests</directory>
             </exclude>
         </whitelist>
     </filter>
 
+    <logging>
+        <log type="coverage-html" target="coverage" title="FullText" charset="UTF-8" yui="true" highlight="true" lowUpperBound="35" highLowerBound="70"/>
+    </logging>
 </phpunit>

@@ -3,7 +3,6 @@
 namespace Tests\Readability;
 
 use Readability\Readability;
-use Readability\JSLikeHTMLElement;
 
 class ReadabilityTested extends Readability
 {
