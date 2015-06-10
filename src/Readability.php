@@ -47,7 +47,6 @@ namespace Readability;
  */
 class Readability
 {
-    public $version = '1.7.2-without-multi-page';
     public $convertLinksToFootnotes = false;
     public $revertForcedParagraphElements = true;
     public $articleTitle;
@@ -195,7 +194,13 @@ class Readability
             libxml_use_internal_errors(true);
             $this->dom = new \DOMDocument();
             $this->dom->preserveWhiteSpace = false;
-            @$this->dom->loadHTML($html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
+
+            if (PHP_VERSION_ID >= 50400) {
+                $this->dom->loadHTML($html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
+            } else {
+                $this->dom->loadHTML($html);
+            }
+
             libxml_use_internal_errors(false);
         }
 
