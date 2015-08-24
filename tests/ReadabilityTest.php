@@ -48,6 +48,8 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertFalse($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('Sorry, Readability was unable to parse this page for content.', $readability->getContent()->innerHTML);
     }
 
@@ -58,7 +60,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is the awesome content :)', $readability->getContent()->innerHTML);
     }
 
@@ -69,7 +73,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is the awesome content :)', $readability->getContent()->innerHTML);
     }
 
@@ -81,7 +87,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is the awesome content :)', $readability->getContent()->innerHTML);
     }
 
@@ -94,7 +102,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertContains('readabilityFootnoteLink', $readability->getContent()->innerHTML);
         $this->assertContains('readabilityLink-3', $readability->getContent()->innerHTML);
@@ -109,7 +119,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertNotContains('will be removed', $readability->getContent()->innerHTML);
         $this->assertNotContains('<h2>', $readability->getContent()->innerHTML);
@@ -123,7 +135,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertContains('nofollow', $readability->getContent()->innerHTML);
     }
@@ -136,7 +150,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertContains('nofollow', $readability->getContent()->innerHTML);
     }
@@ -149,7 +165,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertNotContains('<aside>', $readability->getContent()->innerHTML);
         $this->assertContains('<footer/>', $readability->getContent()->innerHTML);
@@ -163,7 +181,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertNotContains('This text should be removed', $readability->getContent()->innerHTML);
     }
@@ -176,7 +196,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('alt="tr"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
     }
 
@@ -188,7 +210,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
     }
@@ -201,7 +225,69 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
         $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
+        $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
+        $this->assertNotContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
+    }
+
+    public function testTitle()
+    {
+        $readability = new ReadabilityTested('<title>this is my title</title><article class="awesomecontent">'.str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7).'<p></p></article>', 'http://0.0.0.0');
+        $readability->debug = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEquals('this is my title', $readability->getTitle()->innerHTML);
+        $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
+        $this->assertNotContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
+    }
+
+    public function testTitleWithDash()
+    {
+        $readability = new ReadabilityTested('<title> title2 - title3 </title><article class="awesomecontent">'.str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7).'<p></p></article>', 'http://0.0.0.0');
+        $readability->debug = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEquals('title2 - title3', $readability->getTitle()->innerHTML);
+        $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
+        $this->assertNotContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
+    }
+
+    public function testTitleWithDoubleDot()
+    {
+        $readability = new ReadabilityTested('<title> title2 : title3 </title><article class="awesomecontent">'.str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7).'<p></p></article>', 'http://0.0.0.0');
+        $readability->debug = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEquals('title2 : title3', $readability->getTitle()->innerHTML);
+        $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
+        $this->assertNotContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
+    }
+
+    public function testTitleTooShortUseH1()
+    {
+        $readability = new ReadabilityTested('<title>too short</title><h1>this is my h1 title !</h1><article class="awesomecontent">'.str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7).'<p></p></article>', 'http://0.0.0.0');
+        $readability->debug = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEquals('this is my h1 title !', $readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertNotContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
     }
