@@ -47,7 +47,7 @@ class JSLikeHTMLElement extends \DOMElement
     {
         if ($name == 'innerHTML') {
             // first, empty the element
-            for ($x = $this->childNodes->length - 1; $x >= 0; $x--) {
+            for ($x = $this->childNodes->length - 1; $x >= 0; --$x) {
                 $this->removeChild($this->childNodes->item($x));
             }
             // $value holds our new inner HTML
