@@ -63,6 +63,7 @@ class Readability
     protected $bodyCache = null; // Cache the body HTML in case we need to re-use it later
     protected $flags = 7; // 1 | 2 | 4;   // Start with all processing flags set.
     protected $success = false; // indicates whether we were able to extract or not
+
     /**
      * All of the regular expressions in use within readability.
      * Defined up here so we don't instantiate them repeatedly in loops.
@@ -122,6 +123,7 @@ class Readability
         '!</code>\s*</pre>!is' => '</pre>',
         '!<[hb]r>!is' => '<\\1 />',
     );
+
     // flags
     const FLAG_STRIP_UNLIKELYS = 1;
     const FLAG_WEIGHT_ATTRIBUTES = 2;
@@ -137,6 +139,7 @@ class Readability
     const MIN_ARTICLE_LENGTH = 200;
     const MIN_NODE_LENGTH = 80;
     const MAX_LINK_DENSITY = 0.25;
+
     /**
      * Create instance of Readability.
      *
@@ -206,6 +209,7 @@ class Readability
 
         $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
     }
+
     /**
      * Get article title element.
      *
@@ -215,6 +219,7 @@ class Readability
     {
         return $this->articleTitle;
     }
+
     /**
      * Get article content element.
      *
@@ -224,6 +229,7 @@ class Readability
     {
         return $this->articleContent;
     }
+
     /**
      * Add pre filter for raw input HTML processing.
      *
@@ -234,6 +240,7 @@ class Readability
     {
         $this->pre_filters[$filter] = $replacer;
     }
+
     /**
      * Add post filter for raw output HTML processing.
      *
@@ -244,6 +251,7 @@ class Readability
     {
         $this->post_filters[$filter] = $replacer;
     }
+
     /**
      * Runs readability.
      *
@@ -305,6 +313,7 @@ class Readability
 
         return $this->success;
     }
+
     /**
      * Debug.
      */
@@ -325,6 +334,7 @@ class Readability
             syslog(6, $this->debugText); // 1 - error 6 - info
         }
     }
+
     /**
      * Run any post-process modifications to article content as necessary.
      *
@@ -336,6 +346,7 @@ class Readability
             $this->addFootnotes($articleContent);
         }
     }
+
     /**
      * Get the article title as an H1.
      *
@@ -349,6 +360,7 @@ class Readability
             $curTitle = $origTitle = $this->getInnerText($this->dom->getElementsByTagName('title')->item(0));
         } catch (Exception $e) {
         }
+
         if (preg_match('/ [\|\-] /', $curTitle)) {
             $curTitle = preg_replace('/(.*)[\|\-] .*/i', '$1', $origTitle);
             if (count(explode(' ', $curTitle)) < 3) {
@@ -365,15 +377,18 @@ class Readability
                 $curTitle = $this->getInnerText($hOnes->item(0));
             }
         }
+
         $curTitle = trim($curTitle);
         if (count(explode(' ', $curTitle)) <= 4) {
             $curTitle = $origTitle;
         }
+
         $articleTitle = $this->dom->createElement('h1');
         $articleTitle->innerHTML = $curTitle;
 
         return $articleTitle;
     }
+
     /**
      * Prepare the HTML document for readability to scrape it.
      * This includes things like stripping javascript, CSS, and handling terrible markup.
@@ -399,6 +414,7 @@ class Readability
             $linkTags->item($i)->parentNode->removeChild($linkTags->item($i));
         }
     }
+
     /**
      * For easier reading, convert this document to have footnotes at the bottom rather than inline links.
      *
@@ -453,6 +469,7 @@ class Readability
             $articleContent->appendChild($footnotesWrapper);
         }
     }
+
     /**
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
@@ -547,6 +564,7 @@ class Readability
             }
         }
     }
+
     /**
      * Initialize a node with the readability object. Also checks the
      * className/id for special names to add to its score.
@@ -614,6 +632,7 @@ class Readability
         }
         $readability->value += $this->getWeight($node);
     }
+
     /**
      * grabArticle - Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
@@ -796,6 +815,7 @@ class Readability
                     $this->dbg('Setting body to a raw HTML of original page!');
                     $topCandidate->innerHTML = $page->documentElement->innerHTML;
                     $page->documentElement->innerHTML = '';
+                    $this->reinitBody();
                     $page->documentElement->appendChild($topCandidate);
                 }
             } else {
@@ -896,10 +916,8 @@ class Readability
          * finding the -right- content.
          */
         if (mb_strlen($this->getInnerText($articleContent, false)) < self::MIN_ARTICLE_LENGTH) {
-            if (!$this->body->hasChildNodes()) {
-                $this->body = $this->dom->createElement('body');
-            }
-            $this->body->innerHTML = $this->bodyCache;
+            $this->reinitBody();
+
             if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS)) {
                 $this->removeFlag(self::FLAG_STRIP_UNLIKELYS);
                 $this->dbg('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to strip unlikely content.\n");
@@ -922,6 +940,7 @@ class Readability
 
         return $articleContent;
     }
+
     /**
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
@@ -946,6 +965,7 @@ class Readability
 
         return $textContent;
     }
+
     /**
      * Remove the style attribute on every $e and under.
      *
@@ -961,6 +981,7 @@ class Readability
             $elem->removeAttribute('style');
         }
     }
+
     /**
      * Get comma number for a given text.
      *
@@ -972,6 +993,7 @@ class Readability
     {
         return substr_count($text, ',');
     }
+
     /**
      * Get words number for a given text if words separated by a space.
      * Input string should be normalized.
@@ -984,6 +1006,7 @@ class Readability
     {
         return substr_count($text, ' ');
     }
+
     /**
      * Get the density of links as a percentage of the content
      * This is the amount of text that is inside a link divided by the total text in the node.
@@ -1011,6 +1034,7 @@ class Readability
             return 0;
         }
     }
+
     /**
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
@@ -1045,6 +1069,7 @@ class Readability
 
         return $weight;
     }
+
     /**
      * Get an element relative weight.
      *
@@ -1065,6 +1090,7 @@ class Readability
 
         return $weight;
     }
+
     /**
      * Remove extraneous break tags from a node.
      *
@@ -1076,6 +1102,7 @@ class Readability
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
         $node->innerHTML = $html;
     }
+
     /**
      * Clean a node of all elements of type "tag".
      * (Unless it's a youtube/vimeo video. People love movies.).
@@ -1106,6 +1133,7 @@ class Readability
             $cur_item->parentNode->removeChild($cur_item);
         }
     }
+
     /**
      * Clean an element of all tags of type "tag" if they look fishy.
      * "Fishy" is an algorithm based on content length, classnames,
@@ -1192,8 +1220,8 @@ class Readability
                     } elseif ($input > floor($p / 3)) {
                         $this->dbg('  too many <input> elements');
                         $toRemove = true;
-                    } elseif ($contentLength < 25 && ($img === 0 || $img > 2)) {
-                        $this->dbg('  content length less than 25 chars and 0 images, or more than 2 images');
+                    } elseif ($contentLength < 10 && ($img === 0 || $img > 2)) {
+                        $this->dbg('  content length less than 10 chars and 0 images, or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.2) {
                         $this->dbg('  weight is '.$weight.' lower than 0 and link density is '.sprintf('%.2f', $linkDensity).' > 0.2');
@@ -1214,6 +1242,7 @@ class Readability
             }
         }
     }
+
     /**
      * Clean out spurious headers from an Element. Checks things like classnames and link density.
      *
@@ -1230,16 +1259,32 @@ class Readability
             }
         }
     }
+
     public function flagIsActive($flag)
     {
         return ($this->flags & $flag) > 0;
     }
+
     public function addFlag($flag)
     {
         $this->flags = $this->flags | $flag;
     }
+
     public function removeFlag($flag)
     {
         $this->flags = $this->flags & ~$flag;
+    }
+
+    /**
+     * Will recreate previously deleted body property
+     *
+     * @return void
+     */
+    protected function reinitBody()
+    {
+        if (!isset($this->body->childNodes)) {
+            $this->body = $this->dom->createElement('body');
+            $this->body->innerHTML = $this->bodyCache;
+        }
     }
 }
