@@ -195,8 +195,10 @@ class Readability
 
         if (!($parser == 'html5lib' && ($this->dom = \HTML5_Parser::parse($html)))) {
             libxml_use_internal_errors(true);
+
             $this->dom = new \DOMDocument();
             $this->dom->preserveWhiteSpace = false;
+            $this->dom->formatOutput = true;
 
             if (PHP_VERSION_ID >= 50400) {
                 $this->dom->loadHTML($html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
@@ -292,11 +294,11 @@ class Readability
         if (!$articleContent) {
             $this->success = false;
             $articleContent = $this->dom->createElement('div');
-            $articleContent->setAttribute('id', 'readability-content');
+            $articleContent->setAttribute('class', 'readability-content');
             $articleContent->innerHTML = '<p>Sorry, Readability was unable to parse this page for content.</p>';
         }
-        $overlay->setAttribute('id', 'readOverlay');
-        $innerDiv->setAttribute('id', 'readInner');
+        $overlay->setAttribute('class', 'readOverlay');
+        $innerDiv->setAttribute('class', 'readInner');
         // Glue the structure of our document together.
         $innerDiv->appendChild($articleTitle);
         $innerDiv->appendChild($articleContent);
@@ -403,7 +405,7 @@ class Readability
             $this->body = $this->dom->createElement('body');
             $this->dom->documentElement->appendChild($this->body);
         }
-        $this->body->setAttribute('id', 'readabilityBody');
+        $this->body->setAttribute('class', 'readabilityBody');
         // Remove all style tags in head.
         $styleTags = $this->dom->getElementsByTagName('style');
         for ($i = $styleTags->length - 1; $i >= 0; --$i) {
@@ -423,10 +425,10 @@ class Readability
     public function addFootnotes($articleContent)
     {
         $footnotesWrapper = $this->dom->createElement('footer');
-        $footnotesWrapper->setAttribute('id', 'readability-footnotes');
+        $footnotesWrapper->setAttribute('class', 'readability-footnotes');
         $footnotesWrapper->innerHTML = '<h3>References</h3>';
         $articleFootnotes = $this->dom->createElement('ol');
-        $articleFootnotes->setAttribute('id', 'readability-footnotes-list');
+        $articleFootnotes->setAttribute('class', 'readability-footnotes-list');
         $footnotesWrapper->appendChild($articleFootnotes);
         $articleLinks = $articleContent->getElementsByTagName('a');
         $linkCount = 0;
@@ -842,7 +844,7 @@ class Readability
          * Things like preambles, content split by ads that we removed, etc.
          */
         $articleContent = $this->dom->createElement('div');
-        $articleContent->setAttribute('id', 'readability-content');
+        $articleContent->setAttribute('class', 'readability-content');
         $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
         $siblingNodes = $topCandidate->parentNode->childNodes;
         if (!isset($siblingNodes)) {
@@ -884,7 +886,10 @@ class Readability
                     $this->dbg('Altering siblingNode '.$siblingNodeName.' to div.');
                     $nodeToAppend = $this->dom->createElement('div');
                     try {
-                        $nodeToAppend->setAttribute('id', $siblingNode->getAttribute('id'));
+                        if ($siblingNode->getAttribute('id')) {
+                            $nodeToAppend->setAttribute('id', $siblingNode->getAttribute('id'));
+                        }
+
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
                         $nodeToAppend->innerHTML = $siblingNode->innerHTML;
                     } catch (Exception $e) {
