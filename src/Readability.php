@@ -198,7 +198,6 @@ class Readability
 
             $this->dom = new \DOMDocument();
             $this->dom->preserveWhiteSpace = false;
-            $this->dom->formatOutput = true;
 
             if (PHP_VERSION_ID >= 50400) {
                 $this->dom->loadHTML($html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
