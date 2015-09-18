@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/j0k3r/php-readability.svg?branch=master)](https://travis-ci.org/j0k3r/php-readability)
 [![Code Coverage](https://scrutinizer-ci.com/g/j0k3r/php-readability/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/j0k3r/php-readability/?branch=master)
 
-This is an extract of the Readability class from the [full-text-rss](https://github.com/Dither/full-text-rss) fork. It kind be defined as a better version of the original [php-readability](http://code.fivefilters.org/php-readability).
+This is an extract of the Readability class from the [full-text-rss](https://github.com/Dither/full-text-rss) fork. It kind be defined as a better version of the original [php-readability](https://bitbucket.org/fivefilters/php-readability/overview).
 
 ## Differences
 
