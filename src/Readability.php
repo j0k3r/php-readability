@@ -548,7 +548,7 @@ class Readability
             // add extra text to iframe tag to avoid an auto-closing iframe and then break the html code
             if ($iframeCount) {
                 $iframe = $articleParagraphs->item($i)->getElementsByTagName('iframe');
-                $iframe->item(0)->nodeValue = '&nbsp;';
+                $iframe->item(0)->nodeValue = ' ';
 
                 $articleParagraphs->item($i)->parentNode->replaceChild($iframe->item(0), $articleParagraphs->item($i));
             }

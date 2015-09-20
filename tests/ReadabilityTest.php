@@ -302,4 +302,53 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
     //     $this->assertEquals('/0\.0\.0\.0/', $readability->getDomainRegexp());
     //     $this->assertInstanceOf('DomDocument', $readability->dom);
     // }
+
+    // dummy function to be used to the next test
+    public function error2Exception($code, $string, $file, $line, $context)
+    {
+        throw new \Exception($string, $code);
+    }
+
+    public function testAutoClosingIframeNotThrowingException()
+    {
+        error_reporting(E_ALL | E_STRICT);
+        ini_set('display_errors', true);
+        set_error_handler(array($this, 'error2Exception'), E_ALL | E_STRICT);
+
+        $data = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+            <html xmlns="http://www.w3.org/1999/xhtml" lang="ru-RU" prefix="og: http://ogp.me/ns#">
+
+            <head profile="http://gmpg.org/xfn/11">
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+            </head>
+            <body class="single single-post postid-22030 single-format-standard">
+              <div id="wrapper">
+                <div id="content">
+                  <div class="post-22030 post type-post status-publish format-standard has-post-thumbnail hentry category-video category-reviews tag-193" id="post-22030">
+                    <h1>3D Touch &#8212; будущее мобильных игр</h1>
+                    <div class="postdate">Автор:  <strong>Сергей Пак</strong> | Просмотров: 1363 | Опубликовано:  14 сентября 2015 </div>
+                    <div class="entry">
+                      <p>Компания Apple представила новую технологию 3D Touch, которая является прямым потомком более ранней версии Force Touch &#8212; последняя, напомним, используется сейчас в трекпадах Macbook Pro и Macbook 2015. Теперь управлять устройством стало в разы проще, и Force Touch открывает перед пользователями новые возможности, но при этом 3D Touch &#8212; это про другое. Дело в том, что теперь и на мобильных устройствах интерфейс будет постепенно меняться, кардинальные перемены ждут мобильный гейминг, потому что здесь разработчики действительно могут разгуляться.<span id="more-22030"></span></p>
+                      <p><iframe src="https://www.youtube.com/embed/PUep6xNeKjA" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe></p>
+                      <p>Итак, просто представьте себе, что iPhone 6S &#8212; это, по большому счету, отличная игровая приставка, которую вы носите с собой, а еще она может выдавать невероятной красоты картинку. Но проблема заключается, пожалуй, в том, что управлять персонажем в играх довольно трудно &#8212; он неповоротлив, обладает заторможенной реакцией, а игровой клиент зачастую требует перегруза интерфейса для того, чтобы обеспечить максимально большое количество возможностей. Благодаря трехуровневому нажатию можно избавиться от лишних кнопок и обеспечить более качественный обзор местности, и при этом пользователь будет закрывать пальцами минимальное пространство.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </body>
+            </html>';
+
+        $readability = new ReadabilityTested($data, 'http://iosgames.ru/?p=22030');
+        $readability->debug = true;
+
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertContains('<iframe src="https://www.youtube.com/embed/PUep6xNeKjA" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"> </iframe>', $readability->getContent()->innerHTML);
+        $this->assertContains('3D Touch', $readability->getTitle()->innerHTML);
+    }
 }
