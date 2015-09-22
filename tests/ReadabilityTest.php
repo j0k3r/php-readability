@@ -112,7 +112,7 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
     public function testStandardClean()
     {
-        $readability = new ReadabilityTested('<div><h2>Title</h2>'.str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7).'<a href="#nofollow" rel="nofollow">will be removed</a></div>', 'http://0.0.0.0');
+        $readability = new ReadabilityTested('<div><h2>Title</h2>'.str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7).'<a href="#nofollow" rel="nofollow">will NOT be removed</a></div>', 'http://0.0.0.0');
         $readability->debug = true;
         $readability->lightClean = false;
         $res = $readability->init();
@@ -123,7 +123,7 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('<div readability=', $readability->getContent()->innerHTML);
         $this->assertEmpty($readability->getTitle()->innerHTML);
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
-        $this->assertNotContains('will be removed', $readability->getContent()->innerHTML);
+        $this->assertContains('will NOT be removed', $readability->getContent()->innerHTML);
         $this->assertNotContains('<h2>', $readability->getContent()->innerHTML);
     }
 
