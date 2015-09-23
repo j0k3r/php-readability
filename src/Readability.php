@@ -186,7 +186,6 @@ class Readability
                 $this->original_html = $html;
                 $this->tidied = true;
                 $html = $tidy->value;
-                $html = preg_replace('/<html[^>]+>/i', '<html>', $html);
                 $html = preg_replace('/[\r\n]+/is', "\n", $html);
             }
             unset($tidy);
