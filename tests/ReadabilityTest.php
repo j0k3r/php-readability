@@ -19,6 +19,9 @@ class ReadabilityTested extends Readability
 
 class ReadabilityTest extends \PHPUnit_Framework_TestCase
 {
+    /**
+     * @requires extension tidy
+     */
     public function testConstructDefault()
     {
         $readability = new ReadabilityTested('');
@@ -30,6 +33,9 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('DomDocument', $readability->dom);
     }
 
+    /**
+     * @requires extension tidy
+     */
     public function testConstructSimple()
     {
         $readability = new ReadabilityTested('<html/>', 'http://0.0.0.0');
@@ -37,6 +43,28 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('http://0.0.0.0', $readability->url);
         $this->assertContains('Parsing URL', $readability->getDebugText());
         $this->assertContains('Tidying document', $readability->getDebugText());
+        $this->assertEquals('/0\.0\.0\.0/', $readability->getDomainRegexp());
+        $this->assertInstanceOf('DomDocument', $readability->dom);
+    }
+
+    public function testConstructDefaultWithoutTidy()
+    {
+        $readability = new ReadabilityTested('', null, 'libxml', false);
+
+        $this->assertNull($readability->url);
+        $this->assertContains('Parsing URL', $readability->getDebugText());
+        $this->assertNotContains('Tidying document', $readability->getDebugText());
+        $this->assertNull($readability->getDomainRegexp());
+        $this->assertInstanceOf('DomDocument', $readability->dom);
+    }
+
+    public function testConstructSimpleWithoutTidy()
+    {
+        $readability = new ReadabilityTested('<html/>', 'http://0.0.0.0', 'libxml', false);
+
+        $this->assertEquals('http://0.0.0.0', $readability->url);
+        $this->assertContains('Parsing URL', $readability->getDebugText());
+        $this->assertNotContains('Tidying document', $readability->getDebugText());
         $this->assertEquals('/0\.0\.0\.0/', $readability->getDomainRegexp());
         $this->assertInstanceOf('DomDocument', $readability->dom);
     }
