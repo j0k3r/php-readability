@@ -24,8 +24,7 @@
         "role": "Developer (original JS version)"
     }],
     "require": {
-        "php": ">=5.3.3",
-        "ext-tidy": ">=1.2"
+        "php": ">=5.3.3"
     },
     "autoload": {
         "psr-4": { "Readability\\": "src/" }
