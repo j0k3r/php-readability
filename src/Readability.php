@@ -69,7 +69,7 @@ class Readability
      * Defined up here so we don't instantiate them repeatedly in loops.
      */
     public $regexps = array(
-        'unlikelyCandidates' => '/display\s*:\s*none|ignore|\binfo|annoy|clock|date|time|author|intro|links|hidd?e|about|archive|\bprint|bookmark|tags|share|search|social|robot|published|combx|comment|mast(?:head)|subscri|community|category|disqus|extra|head|head(?:er|note)|floor|foot(?:er|note)|menu|tool|function|nav|remark|rss|shoutbox|tool|widget|meta|banner|sponsor|adsense|inner-?ad|ad-|sponsor|\badv\b|\bads\b|agr?egate?|pager|sidebar|popup|tweet|twitter/i',
+        'unlikelyCandidates' => '/display\s*:\s*none|ignore|\binfo|annoy|clock|date|time|author|intro|links|hidd?e|about|archive|\bprint|bookmark|tags|tag-list|share|search|social|robot|published|combx|comment|mast(?:head)|subscri|community|category|disqus|extra|head|head(?:er|note)|floor|foot(?:er|note)|menu|tool|function|nav|remark|rss|shoutbox|tool|widget|meta|banner|sponsor|adsense|inner-?ad|ad-|sponsor|\badv\b|\bads\b|agr?egate?|pager|sidebar|popup|tweet|twitter/i',
         'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page/i',
         'positive' => '/read|full|article|body|\bcontent|contain|entry|main|markdown|page|attach|pagination|post|text|blog|story/i',
         'negative' => '/bottom|stat|info|discuss|e[\-]?mail|comment|reply|log.{2}(n|ed)|sign|single|combx|com-|contact|_nav|link|media|\bout|promo|\bad-|related|scroll|shoutbox|sidebar|sponsor|shopping|teaser|recommend/i',
@@ -789,6 +789,7 @@ class Readability
                 $grandParentNode->getAttributeNode('readability')->value += $contentScore / self::GRANDPARENT_SCORE_DIVISOR;
             }
         }
+
         /*
          * Node prepping: trash nodes that look cruddy (like ones with the class name "comment", etc).
          * This is faster to do before scoring but safer after.
@@ -800,7 +801,7 @@ class Readability
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? strcasecmp($node->parentNode->tagName, 'article') !== 0 : true)) {
-                    $this->dbg('Removing unlikely candidate '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->dbg('Removing unlikely candidate (using note) '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                 }
             }
@@ -809,15 +810,15 @@ class Readability
 
             for ($node = null, $c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
-                $tagName = $node->tagName;
-                /* Remove unlikely candidates */
+
+                // Remove unlikely candidates
                 $unlikelyMatchString = $node->getAttribute('class').' '.$node->getAttribute('id').' '.$node->getAttribute('style');
-                //$this->dbg('Processing '.$node->getNodePath().' by "'. $unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int)$node->getAttributeNode('readability')->value : 0));
+
                 if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
                     preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
                     !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
                 ) {
-                    $this->dbg('Removing unlikely candidate '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->dbg('Removing unlikely candidate (using conf) '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                     --$nodeIndex;
                 }
@@ -934,9 +935,8 @@ class Readability
                 $nodeContent = $this->getInnerText($siblingNode, true, true);
                 $nodeLength = mb_strlen($nodeContent);
 
-                if ($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY) {
-                    $append = true;
-                } elseif ($nodeLength < self::MIN_NODE_LENGTH && $linkDensity === 0 && preg_match('/\.( |$)/', $nodeContent)) {
+                if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
+                    || ($nodeLength < self::MIN_NODE_LENGTH && $linkDensity === 0 && preg_match('/\.( |$)/', $nodeContent))) {
                     $append = true;
                 }
             }
@@ -946,15 +946,15 @@ class Readability
                 $nodeToAppend = null;
 
                 if (strcasecmp($siblingNodeName, 'div') !== 0 && strcasecmp($siblingNodeName, 'p') !== 0) {
-                    /* We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident. */
-                    $this->dbg('Altering siblingNode '.$siblingNodeName.' to div.');
+                    // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
+                    $this->dbg('Altering siblingNode "'.$siblingNodeName.'" to "div".');
                     $nodeToAppend = $this->dom->createElement('div');
 
                     try {
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
                         $nodeToAppend->innerHTML = $siblingNode->innerHTML;
                     } catch (Exception $e) {
-                        $this->dbg('Could not alter siblingNode '.$siblingNodeName.' to div, reverting to original.');
+                        $this->dbg('Could not alter siblingNode "'.$siblingNodeName.'" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
                         --$s;
                         --$sl;
@@ -1161,9 +1161,9 @@ class Readability
         }
 
         $weight = 0;
-        /* Look for a special classname */
+        // Look for a special classname
         $weight += $this->weightAttribute($e, 'class');
-        /* Look for a special ID */
+        // Look for a special ID
         $weight += $this->weightAttribute($e, 'id');
 
         return $weight;
@@ -1196,18 +1196,18 @@ class Readability
         $isEmbed = ($tag === 'audio' || $tag === 'video' || $tag === 'iframe' || $tag === 'object' || $tag === 'embed');
 
         for ($cur_item = null, $y = $targetList->length - 1; $y >= 0; --$y) {
-            /* Allow youtube and vimeo videos through as people usually want to see those. */
+            // Allow youtube and vimeo videos through as people usually want to see those.
             $cur_item = $targetList->item($y);
 
             if ($isEmbed) {
                 $attributeValues = $cur_item->getAttribute('src').' '.$cur_item->getAttribute('href');
 
-                /* First, check the elements attributes to see if any of them contain known media hosts */
+                // First, check the elements attributes to see if any of them contain known media hosts
                 if (preg_match($this->regexps['media'], $attributeValues)) {
                     continue;
                 }
 
-                /* Then check the elements inside this element for the same. */
+                // Then check the elements inside this element for the same.
                 if (preg_match($this->regexps['media'], $targetList->item($y)->innerHTML)) {
                     continue;
                 }
