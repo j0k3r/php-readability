@@ -2,6 +2,10 @@
 
 namespace Readability;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+
 /**
  * Arc90's Readability ported to PHP for FiveFilters.org
  * Based on readability.js version 1.7.1 (without multi-page support)
@@ -45,7 +49,7 @@ namespace Readability;
  * existing DOMElement objects without passing an entire HTML document to
  * be parsed.
  */
-class Readability
+class Readability implements LoggerAwareInterface
 {
     public $convertLinksToFootnotes = false;
     public $revertForcedParagraphElements = true;
@@ -57,10 +61,9 @@ class Readability
     public $url = null;
     // preserves more content (experimental)
     public $lightClean = true;
+    // no more used, keept to avoid BC
     public $debug = false;
     public $tidied = false;
-    // error text for one time output
-    protected $debugText = '';
     // article domain regexp for calibration
     protected $domainRegExp = null;
     protected $body = null; //
@@ -70,6 +73,10 @@ class Readability
     protected $flags = 7;
     // indicates whether we were able to extract or not
     protected $success = false;
+    protected $logger;
+    protected $parser;
+    protected $html;
+    protected $useTidy;
 
     /**
      * All of the regular expressions in use within readability.
@@ -167,67 +174,19 @@ class Readability
      * @param string (optional) Which parser to use for turning raw HTML into a DOMDocument
      * @param bool (optional) Use tidy
      */
-    public function __construct($html, $url = null, $parser = 'libxml', $use_tidy = true)
+    public function __construct($html, $url = null, $parser = 'libxml', $useTidy = true)
     {
         $this->url = $url;
-        $this->debugText = 'Parsing URL: '.$url."\n";
+        $this->html = $html;
+        $this->parser = $parser;
+        $this->useTidy = $useTidy && function_exists('tidy_parse_string');
 
-        if ($url) {
-            $this->domainRegExp = '/'.strtr(preg_replace('/www\d*\./', '', parse_url($url, PHP_URL_HOST)), array('.' => '\.')).'/';
-        }
+        $this->logger = new NullLogger();
+    }
 
-        mb_internal_encoding('UTF-8');
-        mb_http_output('UTF-8');
-        mb_regex_encoding('UTF-8');
-
-        // HACK: dirty cleanup to replace some stuff; shouldn't use regexps with HTML but well...
-        if (!$this->flagIsActive(self::FLAG_DISABLE_PREFILTER)) {
-            foreach ($this->pre_filters as $search => $replace) {
-                $html = preg_replace($search, $replace, $html);
-            }
-            unset($search, $replace);
-        }
-
-        if (trim($html) === '') {
-            $html = '<html></html>';
-        }
-
-        /*
-         * Use tidy (if it exists).
-         * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
-         * Although sometimes it makes matters worse, which is why there is an option to disable it.
-         *
-         */
-        if ($use_tidy && function_exists('tidy_parse_string')) {
-            $this->debugText .= 'Tidying document'."\n";
-            $tidy = tidy_parse_string($html, $this->tidy_config, 'UTF8');
-            if (tidy_clean_repair($tidy)) {
-                $this->original_html = $html;
-                $this->tidied = true;
-                $html = $tidy->value;
-                $html = preg_replace('/[\r\n]+/is', "\n", $html);
-            }
-            unset($tidy);
-        }
-
-        $html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
-
-        if (!($parser == 'html5lib' && ($this->dom = \HTML5_Parser::parse($html)))) {
-            libxml_use_internal_errors(true);
-
-            $this->dom = new \DOMDocument();
-            $this->dom->preserveWhiteSpace = false;
-
-            if (PHP_VERSION_ID >= 50400) {
-                $this->dom->loadHTML($html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
-            } else {
-                $this->dom->loadHTML($html);
-            }
-
-            libxml_use_internal_errors(false);
-        }
-
-        $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
     }
 
     /**
@@ -251,6 +210,17 @@ class Readability
     }
 
     /**
+     * Add pre filter for raw input HTML processing.
+     *
+     * @param string RegExp for replace
+     * @param string (optional) Replacer
+     */
+    public function addPreFilter($filter, $replacer = '')
+    {
+        $this->pre_filters[$filter] = $replacer;
+    }
+
+    /**
      * Add post filter for raw output HTML processing.
      *
      * @param string RegExp for replace
@@ -259,6 +229,77 @@ class Readability
     public function addPostFilter($filter, $replacer = '')
     {
         $this->post_filters[$filter] = $replacer;
+    }
+
+    /**
+     * Load HTML in a DOMDocument.
+     * Apply Pre filters
+     * Cleanup HTML using Tidy (or not).
+     *
+     * @return [type] [description]
+     */
+    private function loadHtml()
+    {
+        $this->original_html = $this->html;
+
+        $this->logger->debug('Parsing URL: '.$this->url);
+
+        if ($this->url) {
+            $this->domainRegExp = '/'.strtr(preg_replace('/www\d*\./', '', parse_url($this->url, PHP_URL_HOST)), array('.' => '\.')).'/';
+        }
+
+        mb_internal_encoding('UTF-8');
+        mb_http_output('UTF-8');
+        mb_regex_encoding('UTF-8');
+
+        // HACK: dirty cleanup to replace some stuff; shouldn't use regexps with HTML but well...
+        if (!$this->flagIsActive(self::FLAG_DISABLE_PREFILTER)) {
+            foreach ($this->pre_filters as $search => $replace) {
+                $this->html = preg_replace($search, $replace, $this->html);
+            }
+            unset($search, $replace);
+        }
+
+        if (trim($this->html) === '') {
+            $this->html = '<html></html>';
+        }
+
+        /*
+         * Use tidy (if it exists).
+         * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
+         * Although sometimes it makes matters worse, which is why there is an option to disable it.
+         *
+         */
+        if ($this->useTidy) {
+            $this->logger->debug('Tidying document');
+
+            $tidy = tidy_parse_string($this->html, $this->tidy_config, 'UTF8');
+            if (tidy_clean_repair($tidy)) {
+                $this->tidied = true;
+                $this->html = $tidy->value;
+                $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
+            }
+            unset($tidy);
+        }
+
+        $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
+
+        if (!($this->parser == 'html5lib' && ($this->dom = \HTML5_Parser::parse($this->html)))) {
+            libxml_use_internal_errors(true);
+
+            $this->dom = new \DOMDocument();
+            $this->dom->preserveWhiteSpace = false;
+
+            if (PHP_VERSION_ID >= 50400) {
+                $this->dom->loadHTML($this->html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
+            } else {
+                $this->dom->loadHTML($this->html);
+            }
+
+            libxml_use_internal_errors(false);
+        }
+
+        $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
     }
 
     /**
@@ -275,6 +316,8 @@ class Readability
      */
     public function init()
     {
+        $this->loadHtml();
+
         if (!isset($this->dom->documentElement)) {
             return false;
         }
@@ -327,32 +370,8 @@ class Readability
         // Set title and content instance variables.
         $this->articleTitle = $articleTitle;
         $this->articleContent = $articleContent;
-        $this->dump_dbg();
 
         return $this->success;
-    }
-
-    /**
-     * Debug.
-     *
-     * @param string $msg
-     */
-    protected function dbg($msg) //, $error=false)
-    {
-        if ($this->debug) {
-            $this->debugText .= $msg."\n";
-        }
-    }
-
-    /**
-     * Dump debug info.
-     */
-    protected function dump_dbg()
-    {
-        if ($this->debug) {
-            openlog('Readability PHP ', LOG_PID | LOG_PERROR, 0);
-            syslog(6, $this->debugText); // 1 - error 6 - info
-        }
     }
 
     /**
@@ -511,7 +530,8 @@ class Readability
      */
     public function prepArticle(\DOMElement $articleContent)
     {
-        $this->dbg($this->lightClean ? 'Light clean enabled.' : 'Standard clean enabled.');
+        $this->logger->debug($this->lightClean ? 'Light clean enabled.' : 'Standard clean enabled.');
+
         $this->cleanStyles($articleContent);
         $this->killBreaks($articleContent);
 
@@ -594,7 +614,7 @@ class Readability
                 }
                 unset($search, $replace);
             } catch (\Exception $e) {
-                $this->dbg('Cleaning output HTML failed. Ignoring: '.$e->getMessage());
+                $this->logger->error('Cleaning output HTML failed. Ignoring: '.$e->getMessage());
             }
         }
     }
@@ -702,7 +722,6 @@ class Readability
             //  (as in, where they contain no other block level elements).
             if (strcasecmp($tagName, 'div') === 0 || strcasecmp($tagName, 'article') === 0 || strcasecmp($tagName, 'section') === 0) {
                 if (!preg_match($this->regexps['divToPElements'], $node->innerHTML)) {
-                    //$this->dbg('Altering '.$node->getNodePath().' to p');
                     $newNode = $this->dom->createElement('p');
 
                     try {
@@ -712,7 +731,7 @@ class Readability
                         --$nodeIndex;
                         $nodesToScore[] = $newNode;
                     } catch (\Exception $e) {
-                        $this->dbg('Could not alter div/article to p, reverting back to div: '.$e->getMessage());
+                        $this->logger->error('Could not alter div/article to p, reverting back to div: '.$e->getMessage());
                     }
                 } else {
                     // Will change these P elements back to text nodes after processing.
@@ -728,7 +747,6 @@ class Readability
 
                          // XML_TEXT_NODE
                         if ($childNode->nodeType == 3) {
-                            //$this->dbg('replacing text node with a P tag with the same content.');
                             $p = $this->dom->createElement('p');
                             $p->innerHTML = $childNode->nodeValue;
                             $p->setAttribute('data-readability-styled', 'true');
@@ -814,7 +832,7 @@ class Readability
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? strcasecmp($node->parentNode->tagName, 'article') !== 0 : true)) {
-                    $this->dbg('Removing unlikely candidate (using note) '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->logger->debug('Removing unlikely candidate (using note) '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                 }
             }
@@ -832,7 +850,7 @@ class Readability
                     preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
                     !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
                 ) {
-                    $this->dbg('Removing unlikely candidate (using conf) '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->logger->debug('Removing unlikely candidate (using conf) '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                     --$nodeIndex;
                 }
@@ -859,7 +877,7 @@ class Readability
                 $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, PHP_ROUND_HALF_UP);
 
                 if (!$topCandidate || $readability->value > (int) $topCandidate->getAttribute('readability')) {
-                    $this->dbg('Candidate: '.$item->getNodePath().' ('.$item->getAttribute('class').':'.$item->getAttribute('id').') with score '.$readability->value);
+                    $this->logger->debug('Candidate: '.$item->getNodePath().' ('.$item->getAttribute('class').':'.$item->getAttribute('id').') with score '.$readability->value);
                     $topCandidate = $item;
                 }
             }
@@ -877,9 +895,9 @@ class Readability
             if ($page instanceof \DOMDocument) {
                 if (!isset($page->documentElement)) {
                     // we don't have a body either? what a mess! :)
-                    $this->dbg('The page has no body!');
+                    $this->logger->debug('The page has no body!');
                 } else {
-                    $this->dbg('Setting body to a raw HTML of original page!');
+                    $this->logger->debug('Setting body to a raw HTML of original page!');
                     $topCandidate->innerHTML = $page->documentElement->innerHTML;
                     $page->documentElement->innerHTML = '';
                     $this->reinitBody();
@@ -908,7 +926,7 @@ class Readability
             }
         }
 
-        $this->dbg('Top candidate: '.$topCandidate->getNodePath());
+        $this->logger->debug('Top candidate: '.$topCandidate->getNodePath());
 
         /*
          * Now that we have the top candidate, look through its siblings for content that might also be related.
@@ -928,9 +946,8 @@ class Readability
             $siblingNode = $siblingNodes->item($s);
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
-            $this->dbg('Looking at sibling node: '.$siblingNode->getNodePath().(($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->hasAttribute('readability')) ? (' with score '.$siblingNode->getAttribute('readability')) : ''));
+            $this->logger->debug('Looking at sibling node: '.$siblingNode->getNodePath().(($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->hasAttribute('readability')) ? (' with score '.$siblingNode->getAttribute('readability')) : ''));
 
-            //$this->dbg('Sibling has score ' . ($siblingNode->readability ? siblingNode.readability.contentScore : 'Unknown'));
             if ($siblingNode->isSameNode($topCandidate)) {
                 $append = true;
             }
@@ -958,18 +975,18 @@ class Readability
             }
 
             if ($append) {
-                $this->dbg('Appending node: '.$siblingNode->getNodePath());
+                $this->logger->debug('Appending node: '.$siblingNode->getNodePath());
 
                 if (strcasecmp($siblingNodeName, 'div') !== 0 && strcasecmp($siblingNodeName, 'p') !== 0) {
                     // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
-                    $this->dbg('Altering siblingNode "'.$siblingNodeName.'" to "div".');
+                    $this->logger->debug('Altering siblingNode "'.$siblingNodeName.'" to "div".');
                     $nodeToAppend = $this->dom->createElement('div');
 
                     try {
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
                         $nodeToAppend->innerHTML = $siblingNode->innerHTML;
                     } catch (\Exception $e) {
-                        $this->dbg('Could not alter siblingNode "'.$siblingNodeName.'" to "div", reverting to original.');
+                        $this->logger->debug('Could not alter siblingNode "'.$siblingNodeName.'" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
                         --$s;
                         --$sl;
@@ -1005,17 +1022,17 @@ class Readability
 
             if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS)) {
                 $this->removeFlag(self::FLAG_STRIP_UNLIKELYS);
-                $this->dbg('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to strip unlikely content.\n");
+                $this->logger->debug('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to strip unlikely content.\n");
 
                 return $this->grabArticle($this->body);
             } elseif ($this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
                 $this->removeFlag(self::FLAG_WEIGHT_ATTRIBUTES);
-                $this->dbg('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to weight attributes.\n");
+                $this->logger->debug('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to weight attributes.\n");
 
                 return $this->grabArticle($this->body);
             } elseif ($this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
                 $this->removeFlag(self::FLAG_CLEAN_CONDITIONALLY);
-                $this->dbg('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to clean at all.\n");
+                $this->logger->debug('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to clean at all.\n");
 
                 return $this->grabArticle($this->body);
             }
@@ -1262,10 +1279,10 @@ class Readability
             $node = $tagsList->item($i);
             $weight = $this->getWeight($node);
             $contentScore = ($node->hasAttribute('readability')) ? (int) $node->getAttribute('readability') : 0;
-            $this->dbg('Start conditional cleaning of '.$node->getNodePath().' (class='.$node->getAttribute('class').'; id='.$node->getAttribute('id').')'.(($node->hasAttribute('readability')) ? (' with score '.$node->getAttribute('readability')) : ''));
+            $this->logger->debug('Start conditional cleaning of '.$node->getNodePath().' (class='.$node->getAttribute('class').'; id='.$node->getAttribute('id').')'.(($node->hasAttribute('readability')) ? (' with score '.$node->getAttribute('readability')) : ''));
 
             if ($weight + $contentScore < 0) {
-                $this->dbg('Removing...');
+                $this->logger->debug('Removing...');
                 $node->parentNode->removeChild($node);
             } elseif ($this->getCommaCount($this->getInnerText($node)) < self::MIN_COMMAS_IN_PARAGRAPH) {
                 /*
@@ -1299,51 +1316,51 @@ class Readability
 
                 if ($this->lightClean) {
                     if ($li > $p && $tag != 'ul' && $tag != 'ol') {
-                        $this->dbg(' too many <li> elements, and parent is not <ul> or <ol>');
+                        $this->logger->debug(' too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
-                        $this->dbg(' too many <input> elements');
+                        $this->logger->debug(' too many <input> elements');
                         $toRemove = true;
                     } elseif ($contentLength < 6 && ($embedCount === 0 && ($img === 0 || $img > 2))) {
-                        $this->dbg(' content length less than 6 chars, 0 embeds and either 0 images or more than 2 images');
+                        $this->logger->debug(' content length less than 6 chars, 0 embeds and either 0 images or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.25) {
-                        $this->dbg(' weight is '.$weight.' < 25 and link density is '.sprintf('%.2f', $linkDensity).' > 0.25');
+                        $this->logger->debug(' weight is '.$weight.' < 25 and link density is '.sprintf('%.2f', $linkDensity).' > 0.25');
                         $toRemove = true;
                     } elseif ($a > 2 && ($weight >= 25 && $linkDensity > 0.5)) {
-                        $this->dbg('  more than 2 links and weight is '.$weight.' > 25 but link density is '.sprintf('%.2f', $linkDensity).' > 0.5');
+                        $this->logger->debug('  more than 2 links and weight is '.$weight.' > 25 but link density is '.sprintf('%.2f', $linkDensity).' > 0.5');
                         $toRemove = true;
                     } elseif ($embedCount > 3) {
-                        $this->dbg(' more than 3 embeds');
+                        $this->logger->debug(' more than 3 embeds');
                         $toRemove = true;
                     }
                 } else {
                     if ($img > $p) {
-                        $this->dbg(' more image elements than paragraph elements');
+                        $this->logger->debug(' more image elements than paragraph elements');
                         $toRemove = true;
                     } elseif ($li > $p && $tag != 'ul' && $tag != 'ol') {
-                        $this->dbg('  too many <li> elements, and parent is not <ul> or <ol>');
+                        $this->logger->debug('  too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
-                        $this->dbg('  too many <input> elements');
+                        $this->logger->debug('  too many <input> elements');
                         $toRemove = true;
                     } elseif ($contentLength < 10 && ($img === 0 || $img > 2)) {
-                        $this->dbg('  content length less than 10 chars and 0 images, or more than 2 images');
+                        $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.2) {
-                        $this->dbg('  weight is '.$weight.' lower than 0 and link density is '.sprintf('%.2f', $linkDensity).' > 0.2');
+                        $this->logger->debug('  weight is '.$weight.' lower than 0 and link density is '.sprintf('%.2f', $linkDensity).' > 0.2');
                         $toRemove = true;
                     } elseif ($weight >= 25 && $linkDensity > 0.5) {
-                        $this->dbg('  weight above 25 but link density is '.sprintf('%.2f', $linkDensity).' > 0.5');
+                        $this->logger->debug('  weight above 25 but link density is '.sprintf('%.2f', $linkDensity).' > 0.5');
                         $toRemove = true;
                     } elseif (($embedCount == 1 && $contentLength < 75) || $embedCount > 1) {
-                        $this->dbg('  1 embed and content length smaller than 75 chars, or more than one embed');
+                        $this->logger->debug('  1 embed and content length smaller than 75 chars, or more than one embed');
                         $toRemove = true;
                     }
                 }
 
                 if ($toRemove) {
-                    $this->dbg('Removing...');
+                    $this->logger->debug('Removing...');
                     $node->parentNode->removeChild($node);
                 }
             }

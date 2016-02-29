@@ -45,3 +45,20 @@ if ($result) {
     echo 'Looks like we couldn\'t find the content. :(';
 }
 ```
+
+If you want to debug it, or check what's going on, you can inject a logger (which must follow `Psr\Log\LoggerInterface`, Monolog for example):
+
+```php
+use Readability\Readability;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$url = 'http://www.medialens.org/index.php/alerts/alert-archive/alerts-2013/729-thatcher.html';
+$html = file_get_contents($url);
+
+$logger = new Logger('readability');
+$logger->pushHandler(new StreamHandler('path/to/your.log', Logger::DEBUG));
+
+$readability = new Readability($html, $url);
+$readability->setLogger($logger);
+```
