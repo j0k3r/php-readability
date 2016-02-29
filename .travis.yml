@@ -23,6 +23,10 @@ install:
     - composer self-update
 
 before_script:
+    # disable TLS for composer because openssl is disabled for PHP 5.3.3 on travis
+    # see: https://blog.travis-ci.com/upcoming_ubuntu_11_10_migration/
+    - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- disable-tls true; fi;
+    - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- secure-http false; fi;
     - composer install --prefer-dist --no-interaction
 
 script:

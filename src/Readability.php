@@ -69,7 +69,7 @@ class Readability
      * Defined up here so we don't instantiate them repeatedly in loops.
      */
     public $regexps = array(
-        'unlikelyCandidates' => '/display\s*:\s*none|ignore|\binfo|annoy|clock|date|time|author|intro|links|hidd?e|about|archive|\bprint|bookmark|tags|share|search|social|robot|published|combx|comment|mast(?:head)|subscri|community|category|disqus|extra|head|head(?:er|note)|floor|foot(?:er|note)|menu|tool|function|nav|remark|rss|shoutbox|tool|widget|meta|banner|sponsor|adsense|inner-?ad|ad-|sponsor|\badv\b|\bads\b|agr?egate?|pager|sidebar|popup|tweet|twitter/i',
+        'unlikelyCandidates' => '/display\s*:\s*none|ignore|\binfo|annoy|clock|date|time|author|intro|links|hidd?e|about|archive|\bprint|bookmark|tags|tag-list|share|search|social|robot|published|combx|comment|mast(?:head)|subscri|community|category|disqus|extra|head|head(?:er|note)|floor|foot(?:er|note)|menu|tool|function|nav|remark|rss|shoutbox|tool|widget|meta|banner|sponsor|adsense|inner-?ad|ad-|sponsor|\badv\b|\bads\b|agr?egate?|pager|sidebar|popup|tweet|twitter/i',
         'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page/i',
         'positive' => '/read|full|article|body|\bcontent|contain|entry|main|markdown|page|attach|pagination|post|text|blog|story/i',
         'negative' => '/bottom|stat|info|discuss|e[\-]?mail|comment|reply|log.{2}(n|ed)|sign|single|combx|com-|contact|_nav|link|media|\bout|promo|\bad-|related|scroll|shoutbox|sidebar|sponsor|shopping|teaser|recommend/i',
@@ -214,7 +214,7 @@ class Readability
     /**
      * Get article title element.
      *
-     * @return DOMElement
+     * @return \DOMElement
      */
     public function getTitle()
     {
@@ -224,7 +224,7 @@ class Readability
     /**
      * Get article content element.
      *
-     * @return DOMElement
+     * @return \DOMElement
      */
     public function getContent()
     {
@@ -326,6 +326,8 @@ class Readability
 
     /**
      * Debug.
+     *
+     * @param string $msg
      */
     protected function dbg($msg) //, $error=false)
     {
@@ -348,11 +350,11 @@ class Readability
     /**
      * Run any post-process modifications to article content as necessary.
      *
-     * @param DOMElement
+     * @param \DOMElement $articleContent
      */
-    public function postProcessContent($articleContent)
+    public function postProcessContent(\DOMElement $articleContent)
     {
-        if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', @$this->url)) {
+        if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
         }
     }
@@ -360,7 +362,7 @@ class Readability
     /**
      * Get the article title as an H1.
      *
-     * @return DOMElement
+     * @return \DOMElement
      */
     protected function getArticleTitle()
     {
@@ -433,8 +435,10 @@ class Readability
      * For easier reading, convert this document to have footnotes at the bottom rather than inline links.
      *
      * @see http://www.roughtype.com/archives/2010/05/experiments_in.php
+     *
+     * @param \DOMElement $articleContent
      */
-    public function addFootnotes($articleContent)
+    public function addFootnotes(\DOMElement $articleContent)
     {
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
@@ -496,9 +500,9 @@ class Readability
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
      *
-     * @param DOMElement
+     * @param \DOMElement $articleContent
      */
-    public function prepArticle($articleContent)
+    public function prepArticle(\DOMElement $articleContent)
     {
         if ($this->lightClean) {
             $this->dbg('Light clean enabled.');
@@ -595,9 +599,9 @@ class Readability
      * Initialize a node with the readability object. Also checks the
      * className/id for special names to add to its score.
      *
-     * @param Element
+     * @param \DOMElement $node
      */
-    protected function initializeNode($node)
+    protected function initializeNode(\DOMElement $node)
     {
         if (!isset($node->tagName)) {
             return;
@@ -664,9 +668,11 @@ class Readability
      * grabArticle - Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
      *
-     * @return DOMElement
+     * @param \DOMElement $page
+     *
+     * @return \DOMElement
      */
-    protected function grabArticle($page = null)
+    protected function grabArticle(\DOMElement $page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -789,6 +795,7 @@ class Readability
                 $grandParentNode->getAttributeNode('readability')->value += $contentScore / self::GRANDPARENT_SCORE_DIVISOR;
             }
         }
+
         /*
          * Node prepping: trash nodes that look cruddy (like ones with the class name "comment", etc).
          * This is faster to do before scoring but safer after.
@@ -800,7 +807,7 @@ class Readability
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? strcasecmp($node->parentNode->tagName, 'article') !== 0 : true)) {
-                    $this->dbg('Removing unlikely candidate '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->dbg('Removing unlikely candidate (using note) '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                 }
             }
@@ -809,15 +816,15 @@ class Readability
 
             for ($node = null, $c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
-                $tagName = $node->tagName;
-                /* Remove unlikely candidates */
+
+                // Remove unlikely candidates
                 $unlikelyMatchString = $node->getAttribute('class').' '.$node->getAttribute('id').' '.$node->getAttribute('style');
-                //$this->dbg('Processing '.$node->getNodePath().' by "'. $unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int)$node->getAttributeNode('readability')->value : 0));
+
                 if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
                     preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
                     !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
                 ) {
-                    $this->dbg('Removing unlikely candidate '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->dbg('Removing unlikely candidate (using conf) '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                     --$nodeIndex;
                 }
@@ -934,9 +941,8 @@ class Readability
                 $nodeContent = $this->getInnerText($siblingNode, true, true);
                 $nodeLength = mb_strlen($nodeContent);
 
-                if ($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY) {
-                    $append = true;
-                } elseif ($nodeLength < self::MIN_NODE_LENGTH && $linkDensity === 0 && preg_match('/\.( |$)/', $nodeContent)) {
+                if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
+                    || ($nodeLength < self::MIN_NODE_LENGTH && $linkDensity === 0 && preg_match('/\.( |$)/', $nodeContent))) {
                     $append = true;
                 }
             }
@@ -946,19 +952,15 @@ class Readability
                 $nodeToAppend = null;
 
                 if (strcasecmp($siblingNodeName, 'div') !== 0 && strcasecmp($siblingNodeName, 'p') !== 0) {
-                    /* We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident. */
-                    $this->dbg('Altering siblingNode '.$siblingNodeName.' to div.');
+                    // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
+                    $this->dbg('Altering siblingNode "'.$siblingNodeName.'" to "div".');
                     $nodeToAppend = $this->dom->createElement('div');
 
                     try {
-                        if ($siblingNode->getAttribute('id')) {
-                            $nodeToAppend->setAttribute('id', $siblingNode->getAttribute('id'));
-                        }
-
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
                         $nodeToAppend->innerHTML = $siblingNode->innerHTML;
                     } catch (Exception $e) {
-                        $this->dbg('Could not alter siblingNode '.$siblingNodeName.' to div, reverting to original.');
+                        $this->dbg('Could not alter siblingNode "'.$siblingNodeName.'" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
                         --$s;
                         --$sl;
@@ -1019,13 +1021,13 @@ class Readability
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
      *
-     * @param DOMElement $e
-     * @param bool       $normalizeSpaces (default: true)
-     * @param bool       $flattenLines    (default: false)
+     * @param \DOMElement $e
+     * @param bool        $normalizeSpaces (default: true)
+     * @param bool        $flattenLines    (default: false)
      *
      * @return string
      */
-    public function getInnerText($e, $normalizeSpaces = true, $flattenLines = false)
+    public function getInnerText(\DOMElement $e, $normalizeSpaces = true, $flattenLines = false)
     {
         if (!isset($e->textContent) || $e->textContent === '') {
             return '';
@@ -1045,9 +1047,9 @@ class Readability
     /**
      * Remove the style attribute on every $e and under.
      *
-     * @param DOMElement $e
+     * @param \DOMElement $e
      */
-    public function cleanStyles($e)
+    public function cleanStyles(\DOMElement $e)
     {
         if (!is_object($e)) {
             return;
@@ -1065,7 +1067,7 @@ class Readability
      *
      * @param string $text
      *
-     * @return number (integer)
+     * @return int
      */
     public function getCommaCount($text)
     {
@@ -1078,7 +1080,7 @@ class Readability
      *
      * @param string $text
      *
-     * @return number (integer)
+     * @return int
      */
     public function getWordCount($text)
     {
@@ -1090,12 +1092,12 @@ class Readability
      * This is the amount of text that is inside a link divided by the total text in the node.
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
      *
-     * @param DOMElement $e
-     * @param string     $excludeExternal
+     * @param \DOMElement $e
+     * @param string      $excludeExternal
      *
-     * @return number (float)
+     * @return int
      */
-    public function getLinkDensity($e, $excludeExternal = false)
+    public function getLinkDensity(\DOMElement $e, $excludeExternal = false)
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
@@ -1119,12 +1121,12 @@ class Readability
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
      *
-     * @param DOMElement $element
-     * @param string     $attribute
+     * @param \DOMElement $element
+     * @param string      $attribute
      *
-     * @return number (Integer)
+     * @return int
      */
-    protected function weightAttribute($element, $attribute)
+    protected function weightAttribute(\DOMElement $element, $attribute)
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1154,20 +1156,20 @@ class Readability
     /**
      * Get an element relative weight.
      *
-     * @param DOMElement $e
+     * @param \DOMElement $e
      *
-     * @return number (Integer)
+     * @return int
      */
-    public function getWeight($e)
+    public function getWeight(\DOMElement $e)
     {
         if (!$this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
             return 0;
         }
 
         $weight = 0;
-        /* Look for a special classname */
+        // Look for a special classname
         $weight += $this->weightAttribute($e, 'class');
-        /* Look for a special ID */
+        // Look for a special ID
         $weight += $this->weightAttribute($e, 'id');
 
         return $weight;
@@ -1176,9 +1178,9 @@ class Readability
     /**
      * Remove extraneous break tags from a node.
      *
-     * @param DOMElement $node
+     * @param \DOMElement $node
      */
-    public function killBreaks($node)
+    public function killBreaks(\DOMElement $node)
     {
         $html = $node->innerHTML;
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
@@ -1191,27 +1193,27 @@ class Readability
      *
      * Updated 2012-09-18 to preserve youtube/vimeo iframes
      *
-     * @param DOMElement $e
-     * @param string     $tag
+     * @param \DOMElement $e
+     * @param string      $tag
      */
-    public function clean($e, $tag)
+    public function clean(\DOMElement $e, $tag)
     {
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ($tag === 'audio' || $tag === 'video' || $tag === 'iframe' || $tag === 'object' || $tag === 'embed');
 
         for ($cur_item = null, $y = $targetList->length - 1; $y >= 0; --$y) {
-            /* Allow youtube and vimeo videos through as people usually want to see those. */
+            // Allow youtube and vimeo videos through as people usually want to see those.
             $cur_item = $targetList->item($y);
 
             if ($isEmbed) {
                 $attributeValues = $cur_item->getAttribute('src').' '.$cur_item->getAttribute('href');
 
-                /* First, check the elements attributes to see if any of them contain known media hosts */
+                // First, check the elements attributes to see if any of them contain known media hosts
                 if (preg_match($this->regexps['media'], $attributeValues)) {
                     continue;
                 }
 
-                /* Then check the elements inside this element for the same. */
+                // Then check the elements inside this element for the same.
                 if (preg_match($this->regexps['media'], $targetList->item($y)->innerHTML)) {
                     continue;
                 }
@@ -1226,10 +1228,10 @@ class Readability
      * "Fishy" is an algorithm based on content length, classnames,
      * link density, number of images & embeds, etc.
      *
-     * @param DOMElement $e
-     * @param string     $tag
+     * @param \DOMElement $e
+     * @param string      $tag
      */
-    public function cleanConditionally($e, $tag)
+    public function cleanConditionally(\DOMElement $e, $tag)
     {
         if (!$this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
             return;
@@ -1341,9 +1343,9 @@ class Readability
     /**
      * Clean out spurious headers from an Element. Checks things like classnames and link density.
      *
-     * @param DOMElement $e
+     * @param \DOMElement $e
      */
-    public function cleanHeaders($e)
+    public function cleanHeaders(\DOMElement $e)
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h'.$headerIndex);
@@ -1355,16 +1357,33 @@ class Readability
         }
     }
 
+    /**
+     * Check if the given flag is active.
+     *
+     * @param int $flag
+     *
+     * @return bool
+     */
     public function flagIsActive($flag)
     {
         return ($this->flags & $flag) > 0;
     }
 
+    /**
+     * Add a flag.
+     *
+     * @param int $flag
+     */
     public function addFlag($flag)
     {
         $this->flags = $this->flags | $flag;
     }
 
+    /**
+     * Remove a flag.
+     *
+     * @param int $flag
+     */
     public function removeFlag($flag)
     {
         $this->flags = $this->flags & ~$flag;
