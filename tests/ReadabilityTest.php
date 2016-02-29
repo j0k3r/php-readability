@@ -215,6 +215,22 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertNotContains('This text should be removed', $readability->getContent()->innerHTML);
     }
 
+    public function testWithClassesWithoutLightClean()
+    {
+        $readability = new ReadabilityTested('<article>'.str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7).'<div style="display:none">'.str_repeat('<p class="clock">This text should be removed</p>', 10).'</div></article>', 'http://0.0.0.0');
+        $readability->debug = true;
+        $readability->lightClean = false;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertContains('alt="article"', $readability->getContent()->innerHTML);
+        $this->assertEmpty($readability->getTitle()->innerHTML);
+        $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
+        $this->assertNotContains('This text should be removed', $readability->getContent()->innerHTML);
+    }
+
     public function testWithTd()
     {
         $readability = new ReadabilityTested('<table><tr>'.str_repeat('<td><p>This is an awesome text with some links, here there are the awesome</td>', 7).'</tr></table>', 'http://0.0.0.0');
@@ -429,7 +445,22 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($res);
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
         $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
-        // $this->assertContains('<iframe src="https://www.youtube.com/embed/PUep6xNeKjA" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"> </iframe>', $readability->getContent()->innerHTML);
-        // $this->assertContains('3D Touch', $readability->getTitle()->innerHTML);
+    }
+
+    public function testPostFilters()
+    {
+        $readability = new ReadabilityTested('<div>'.str_repeat('<p>This <b>is</b> the awesome content :)</p>', 7).'</div>', 'http://0.0.0.0');
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertContains('This <strong>is</strong> the awesome content :)', $readability->getContent()->innerHTML);
+
+        $readability = new ReadabilityTested('<div>'.str_repeat('<p>This <b>is</b> the awesome content :)</p>', 7).'</div>', 'http://0.0.0.0');
+        $readability->addPostFilter('!<strong[^>]*>(.*?)</strong>!is', '');
+
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertContains('This  the awesome content :)', $readability->getContent()->innerHTML);
     }
 }

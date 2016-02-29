@@ -251,17 +251,6 @@ class Readability
     }
 
     /**
-     * Add pre filter for raw input HTML processing.
-     *
-     * @param string RegExp for replace
-     * @param string (optional) Replacer
-     */
-    public function addPreFilter($filter, $replacer = '')
-    {
-        $this->pre_filters[$filter] = $replacer;
-    }
-
-    /**
      * Add post filter for raw output HTML processing.
      *
      * @param string RegExp for replace
@@ -302,7 +291,7 @@ class Readability
             }
         }
 
-        if ($bodyElems->length > 0 && $this->body == null) {
+        if ($bodyElems->length > 0 && $this->body === null) {
             $this->body = $bodyElems->item(0);
         }
 
@@ -385,12 +374,11 @@ class Readability
      */
     protected function getArticleTitle()
     {
-        $origTitle = '';
-
         try {
             $curTitle = $origTitle = $this->getInnerText($this->dom->getElementsByTagName('title')->item(0));
         } catch (\Exception $e) {
             $curTitle = '';
+            $origTitle = '';
         }
 
         if (preg_match('/ [\|\-] /', $curTitle)) {
@@ -431,7 +419,7 @@ class Readability
          * In some cases a body element can't be found (if the HTML is totally hosed for example)
          * so we create a new body node and append it to the document.
          */
-        if ($this->body == null) {
+        if ($this->body === null) {
             $this->body = $this->dom->createElement('body');
             $this->dom->documentElement->appendChild($this->body);
         }
@@ -571,7 +559,6 @@ class Readability
         $this->cleanConditionally($articleContent, 'form');
         $this->cleanConditionally($articleContent, 'table');
         $this->cleanConditionally($articleContent, 'ul');
-        //if (!$this->lightClean)
         $this->cleanConditionally($articleContent, 'div');
 
         // Remove extra paragraphs.

@@ -56,7 +56,8 @@ class JSLikeHTMLElement extends \DOMElement
                 $f = $this->ownerDocument->createDocumentFragment();
 
                 // appendXML() expects well-formed markup (XHTML)
-                $result = @$f->appendXML($value); // @ to suppress PHP warnings
+                // @ to suppress PHP warnings
+                $result = @$f->appendXML($value);
                 if ($result) {
                     if ($f->hasChildNodes()) {
                         $this->appendChild($f);
@@ -75,6 +76,7 @@ class JSLikeHTMLElement extends \DOMElement
 
                     if ($result) {
                         $import = $f->getElementsByTagName('htmlfragment')->item(0);
+
                         foreach ($import->childNodes as $child) {
                             $importedNode = $this->ownerDocument->importNode($child, true);
                             $this->appendChild($importedNode);
@@ -102,6 +104,7 @@ class JSLikeHTMLElement extends \DOMElement
     {
         if ($name == 'innerHTML') {
             $inner = '';
+
             foreach ($this->childNodes as $child) {
                 $inner .= $this->ownerDocument->saveXML($child);
             }
