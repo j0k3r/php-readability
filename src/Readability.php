@@ -951,10 +951,6 @@ class Readability
                     $nodeToAppend = $this->dom->createElement('div');
 
                     try {
-                        if ($siblingNode->getAttribute('id')) {
-                            $nodeToAppend->setAttribute('id', $siblingNode->getAttribute('id'));
-                        }
-
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
                         $nodeToAppend->innerHTML = $siblingNode->innerHTML;
                     } catch (Exception $e) {

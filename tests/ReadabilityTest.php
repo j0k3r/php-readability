@@ -379,4 +379,65 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('<iframe src="https://www.youtube.com/embed/PUep6xNeKjA" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"> </iframe>', $readability->getContent()->innerHTML);
         $this->assertContains('3D Touch', $readability->getTitle()->innerHTML);
     }
+
+    /**
+     * This should generate an Exception "DOMElement::setAttribute(): ID post-60 already defined"
+     */
+    public function testAppendIdAlreadyHere()
+    {
+        $data = '<!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0">
+            </head>
+            <body>
+                <div class="container">
+                    <header class="header sml-text-center med-text-left" role="banner">
+                        <h1 class="no-margin"><a class="maintitle" href="https://0.0.0.0" title="Bloc-notes">Bloc-notes</a></h1>
+                        <h2 class="h5 no-margin"></h2>
+                    </header>
+
+                    <nav class="nav" role="navigation">
+                        <div class="responsive-menu">
+                            <label for="menu">Menu</label>
+                            <input type="checkbox" id="menu">
+                        </div>
+                    </nav>
+
+                    <article class="article" role="article" id="post-60">
+                        <section>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are<br/>
+                            This is an awesome text with some links, here there are
+                        </section>
+                        <footer>
+                            <small>
+                                Classé dans : <a class="noactive" title="Services réseaux">Services réseaux</a>
+                            </small>
+                        </footer>
+                    </article>
+                </div>
+            </body>
+            </html>';
+
+        $readability = new ReadabilityTested($data, 'http://0.0.0.0');
+        $readability->debug = true;
+
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        // $this->assertContains('<iframe src="https://www.youtube.com/embed/PUep6xNeKjA" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"> </iframe>', $readability->getContent()->innerHTML);
+        // $this->assertContains('3D Touch', $readability->getTitle()->innerHTML);
+    }
 }
