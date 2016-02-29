@@ -214,7 +214,7 @@ class Readability
     /**
      * Get article title element.
      *
-     * @return DOMElement
+     * @return \DOMElement
      */
     public function getTitle()
     {
@@ -224,7 +224,7 @@ class Readability
     /**
      * Get article content element.
      *
-     * @return DOMElement
+     * @return \DOMElement
      */
     public function getContent()
     {
@@ -326,6 +326,8 @@ class Readability
 
     /**
      * Debug.
+     *
+     * @param string $msg
      */
     protected function dbg($msg) //, $error=false)
     {
@@ -348,11 +350,11 @@ class Readability
     /**
      * Run any post-process modifications to article content as necessary.
      *
-     * @param DOMElement
+     * @param \DOMElement $articleContent
      */
-    public function postProcessContent($articleContent)
+    public function postProcessContent(\DOMElement $articleContent)
     {
-        if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', @$this->url)) {
+        if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
         }
     }
@@ -360,7 +362,7 @@ class Readability
     /**
      * Get the article title as an H1.
      *
-     * @return DOMElement
+     * @return \DOMElement
      */
     protected function getArticleTitle()
     {
@@ -433,8 +435,10 @@ class Readability
      * For easier reading, convert this document to have footnotes at the bottom rather than inline links.
      *
      * @see http://www.roughtype.com/archives/2010/05/experiments_in.php
+     *
+     * @param \DOMElement $articleContent
      */
-    public function addFootnotes($articleContent)
+    public function addFootnotes(\DOMElement $articleContent)
     {
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
@@ -496,9 +500,9 @@ class Readability
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
      *
-     * @param DOMElement
+     * @param \DOMElement $articleContent
      */
-    public function prepArticle($articleContent)
+    public function prepArticle(\DOMElement $articleContent)
     {
         if ($this->lightClean) {
             $this->dbg('Light clean enabled.');
@@ -595,9 +599,9 @@ class Readability
      * Initialize a node with the readability object. Also checks the
      * className/id for special names to add to its score.
      *
-     * @param Element
+     * @param \DOMElement $node
      */
-    protected function initializeNode($node)
+    protected function initializeNode(\DOMElement $node)
     {
         if (!isset($node->tagName)) {
             return;
@@ -664,9 +668,11 @@ class Readability
      * grabArticle - Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
      *
-     * @return DOMElement
+     * @param \DOMElement $page
+     *
+     * @return \DOMElement
      */
-    protected function grabArticle($page = null)
+    protected function grabArticle(\DOMElement $page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -1015,13 +1021,13 @@ class Readability
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
      *
-     * @param DOMElement $e
-     * @param bool       $normalizeSpaces (default: true)
-     * @param bool       $flattenLines    (default: false)
+     * @param \DOMElement $e
+     * @param bool        $normalizeSpaces (default: true)
+     * @param bool        $flattenLines    (default: false)
      *
      * @return string
      */
-    public function getInnerText($e, $normalizeSpaces = true, $flattenLines = false)
+    public function getInnerText(\DOMElement $e, $normalizeSpaces = true, $flattenLines = false)
     {
         if (!isset($e->textContent) || $e->textContent === '') {
             return '';
@@ -1041,9 +1047,9 @@ class Readability
     /**
      * Remove the style attribute on every $e and under.
      *
-     * @param DOMElement $e
+     * @param \DOMElement $e
      */
-    public function cleanStyles($e)
+    public function cleanStyles(\DOMElement $e)
     {
         if (!is_object($e)) {
             return;
@@ -1061,7 +1067,7 @@ class Readability
      *
      * @param string $text
      *
-     * @return number (integer)
+     * @return int
      */
     public function getCommaCount($text)
     {
@@ -1074,7 +1080,7 @@ class Readability
      *
      * @param string $text
      *
-     * @return number (integer)
+     * @return int
      */
     public function getWordCount($text)
     {
@@ -1086,12 +1092,12 @@ class Readability
      * This is the amount of text that is inside a link divided by the total text in the node.
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
      *
-     * @param DOMElement $e
-     * @param string     $excludeExternal
+     * @param \DOMElement $e
+     * @param string      $excludeExternal
      *
-     * @return number (float)
+     * @return int
      */
-    public function getLinkDensity($e, $excludeExternal = false)
+    public function getLinkDensity(\DOMElement $e, $excludeExternal = false)
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
@@ -1115,12 +1121,12 @@ class Readability
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
      *
-     * @param DOMElement $element
-     * @param string     $attribute
+     * @param \DOMElement $element
+     * @param string      $attribute
      *
-     * @return number (Integer)
+     * @return int
      */
-    protected function weightAttribute($element, $attribute)
+    protected function weightAttribute(\DOMElement $element, $attribute)
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1150,11 +1156,11 @@ class Readability
     /**
      * Get an element relative weight.
      *
-     * @param DOMElement $e
+     * @param \DOMElement $e
      *
-     * @return number (Integer)
+     * @return int
      */
-    public function getWeight($e)
+    public function getWeight(\DOMElement $e)
     {
         if (!$this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
             return 0;
@@ -1172,9 +1178,9 @@ class Readability
     /**
      * Remove extraneous break tags from a node.
      *
-     * @param DOMElement $node
+     * @param \DOMElement $node
      */
-    public function killBreaks($node)
+    public function killBreaks(\DOMElement $node)
     {
         $html = $node->innerHTML;
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
@@ -1187,10 +1193,10 @@ class Readability
      *
      * Updated 2012-09-18 to preserve youtube/vimeo iframes
      *
-     * @param DOMElement $e
-     * @param string     $tag
+     * @param \DOMElement $e
+     * @param string      $tag
      */
-    public function clean($e, $tag)
+    public function clean(\DOMElement $e, $tag)
     {
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ($tag === 'audio' || $tag === 'video' || $tag === 'iframe' || $tag === 'object' || $tag === 'embed');
@@ -1222,10 +1228,10 @@ class Readability
      * "Fishy" is an algorithm based on content length, classnames,
      * link density, number of images & embeds, etc.
      *
-     * @param DOMElement $e
-     * @param string     $tag
+     * @param \DOMElement $e
+     * @param string      $tag
      */
-    public function cleanConditionally($e, $tag)
+    public function cleanConditionally(\DOMElement $e, $tag)
     {
         if (!$this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
             return;
@@ -1337,9 +1343,9 @@ class Readability
     /**
      * Clean out spurious headers from an Element. Checks things like classnames and link density.
      *
-     * @param DOMElement $e
+     * @param \DOMElement $e
      */
-    public function cleanHeaders($e)
+    public function cleanHeaders(\DOMElement $e)
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h'.$headerIndex);
@@ -1351,16 +1357,33 @@ class Readability
         }
     }
 
+    /**
+     * Check if the given flag is active.
+     *
+     * @param int $flag
+     *
+     * @return bool
+     */
     public function flagIsActive($flag)
     {
         return ($this->flags & $flag) > 0;
     }
 
+    /**
+     * Add a flag.
+     *
+     * @param int $flag
+     */
     public function addFlag($flag)
     {
         $this->flags = $this->flags | $flag;
     }
 
+    /**
+     * Remove a flag.
+     *
+     * @param int $flag
+     */
     public function removeFlag($flag)
     {
         $this->flags = $this->flags & ~$flag;
