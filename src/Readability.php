@@ -235,8 +235,6 @@ class Readability implements LoggerAwareInterface
      * Load HTML in a DOMDocument.
      * Apply Pre filters
      * Cleanup HTML using Tidy (or not).
-     *
-     * @return [type] [description]
      */
     private function loadHtml()
     {
@@ -1053,9 +1051,9 @@ class Readability implements LoggerAwareInterface
      *
      * @return string
      */
-    public function getInnerText(\DOMElement $e, $normalizeSpaces = true, $flattenLines = false)
+    public function getInnerText(\DOMElement $e = null, $normalizeSpaces = true, $flattenLines = false)
     {
-        if (!isset($e->textContent) || $e->textContent === '') {
+        if (null === $e || !isset($e->textContent) || $e->textContent === '') {
             return '';
         }
 
