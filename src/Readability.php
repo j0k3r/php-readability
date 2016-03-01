@@ -174,14 +174,15 @@ class Readability implements LoggerAwareInterface
      * @param string (optional) Which parser to use for turning raw HTML into a DOMDocument
      * @param bool (optional) Use tidy
      */
-    public function __construct($html, $url = null, $parser = 'libxml', $useTidy = true)
+    public function __construct($html, $url = null, $parser = 'libxml', $use_tidy = true)
     {
         $this->url = $url;
         $this->html = $html;
         $this->parser = $parser;
-        $this->useTidy = $useTidy && function_exists('tidy_parse_string');
+        $this->useTidy = $use_tidy && function_exists('tidy_parse_string');
 
         $this->logger = new NullLogger();
+        $this->loadHtml();
     }
 
     public function setLogger(LoggerInterface $logger)
@@ -235,6 +236,8 @@ class Readability implements LoggerAwareInterface
      * Load HTML in a DOMDocument.
      * Apply Pre filters
      * Cleanup HTML using Tidy (or not).
+     *
+     * @todo This should be called in init() instead of from __construct
      */
     private function loadHtml()
     {
@@ -266,7 +269,6 @@ class Readability implements LoggerAwareInterface
          * Use tidy (if it exists).
          * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
          * Although sometimes it makes matters worse, which is why there is an option to disable it.
-         *
          */
         if ($this->useTidy) {
             $this->logger->debug('Tidying document');
@@ -314,8 +316,6 @@ class Readability implements LoggerAwareInterface
      */
     public function init()
     {
-        $this->loadHtml();
-
         if (!isset($this->dom->documentElement)) {
             return false;
         }
@@ -373,11 +373,30 @@ class Readability implements LoggerAwareInterface
     }
 
     /**
+     * Debug.
+     *
+     * @deprecated use $this->logger->debug() instead
+     */
+    protected function dbg($msg)
+    {
+        $this->logger->debug($msg);
+    }
+
+    /**
+     * Dump debug info.
+     *
+     * @deprecated since Monolog gather log, we don't need it
+     */
+    protected function dump_dbg()
+    {
+    }
+
+    /**
      * Run any post-process modifications to article content as necessary.
      *
      * @param \DOMElement $articleContent
      */
-    public function postProcessContent(\DOMElement $articleContent)
+    public function postProcessContent($articleContent)
     {
         if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
@@ -462,7 +481,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $articleContent
      */
-    public function addFootnotes(\DOMElement $articleContent)
+    public function addFootnotes($articleContent)
     {
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
@@ -526,7 +545,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $articleContent
      */
-    public function prepArticle(\DOMElement $articleContent)
+    public function prepArticle($articleContent)
     {
         $this->logger->debug($this->lightClean ? 'Light clean enabled.' : 'Standard clean enabled.');
 
@@ -623,7 +642,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $node
      */
-    protected function initializeNode(\DOMElement $node)
+    protected function initializeNode($node)
     {
         if (!isset($node->tagName)) {
             return;
@@ -694,7 +713,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return \DOMElement|bool
      */
-    protected function grabArticle(\DOMElement $page = null)
+    protected function grabArticle($page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -743,8 +762,7 @@ class Readability implements LoggerAwareInterface
                             continue;
                         }
 
-                         // XML_TEXT_NODE
-                        if ($childNode->nodeType == 3) {
+                        if ($childNode->nodeType === XML_TEXT_NODE) {
                             $p = $this->dom->createElement('p');
                             $p->innerHTML = $childNode->nodeValue;
                             $p->setAttribute('data-readability-styled', 'true');
@@ -770,7 +788,7 @@ class Readability implements LoggerAwareInterface
                 continue;
             }
 
-            $grandParentNode = ($parentNode->parentNode instanceof \DOMElement) ? $parentNode->parentNode : null;
+            $grandParentNode = $parentNode->parentNode instanceof \DOMElement ? $parentNode->parentNode : null;
             $innerText = $this->getInnerText($nodesToScore[$pt]);
 
             // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
@@ -1051,7 +1069,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return string
      */
-    public function getInnerText(\DOMElement $e = null, $normalizeSpaces = true, $flattenLines = false)
+    public function getInnerText($e, $normalizeSpaces = true, $flattenLines = false)
     {
         if (null === $e || !isset($e->textContent) || $e->textContent === '') {
             return '';
@@ -1073,7 +1091,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $e
      */
-    public function cleanStyles(\DOMElement $e)
+    public function cleanStyles($e)
     {
         if (!is_object($e)) {
             return;
@@ -1121,7 +1139,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return int
      */
-    public function getLinkDensity(\DOMElement $e, $excludeExternal = false)
+    public function getLinkDensity($e, $excludeExternal = false)
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
@@ -1150,7 +1168,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return int
      */
-    protected function weightAttribute(\DOMElement $element, $attribute)
+    protected function weightAttribute($element, $attribute)
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1185,7 +1203,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return int
      */
-    public function getWeight(\DOMElement $e)
+    public function getWeight($e)
     {
         if (!$this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
             return 0;
@@ -1205,7 +1223,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $node
      */
-    public function killBreaks(\DOMElement $node)
+    public function killBreaks($node)
     {
         $html = $node->innerHTML;
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
@@ -1221,7 +1239,7 @@ class Readability implements LoggerAwareInterface
      * @param \DOMElement $e
      * @param string      $tag
      */
-    public function clean(\DOMElement $e, $tag)
+    public function clean($e, $tag)
     {
         $currentItem = null;
         $targetList = $e->getElementsByTagName($tag);
@@ -1257,7 +1275,7 @@ class Readability implements LoggerAwareInterface
      * @param \DOMElement $e
      * @param string      $tag
      */
-    public function cleanConditionally(\DOMElement $e, $tag)
+    public function cleanConditionally($e, $tag)
     {
         if (!$this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
             return;
@@ -1370,7 +1388,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $e
      */
-    public function cleanHeaders(\DOMElement $e)
+    public function cleanHeaders($e)
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h'.$headerIndex);
