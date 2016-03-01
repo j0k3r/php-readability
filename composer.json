@@ -24,7 +24,8 @@
         "role": "Developer (original JS version)"
     }],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "monolog/monolog": "^1.13.1"
     },
     "require-dev": {
         "satooshi/php-coveralls": "~0.6"
