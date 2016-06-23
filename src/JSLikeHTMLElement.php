@@ -45,14 +45,14 @@ class JSLikeHTMLElement extends \DOMElement
      */
     public function __set($name, $value)
     {
-        if ($name == 'innerHTML') {
+        if ($name === 'innerHTML') {
             // first, empty the element
             for ($x = $this->childNodes->length - 1; $x >= 0; --$x) {
                 $this->removeChild($this->childNodes->item($x));
             }
 
             // $value holds our new inner HTML
-            if ($value != '') {
+            if ($value !== '') {
                 $f = $this->ownerDocument->createDocumentFragment();
 
                 // appendXML() expects well-formed markup (XHTML)
@@ -72,7 +72,7 @@ class JSLikeHTMLElement extends \DOMElement
                     // We use it (and suppress the warning) because an HTML fragment will
                     // be wrapped around <html><body> tags which we don't really want to keep.
                     // Note: despite the warning, if loadHTML succeeds it will return true.
-                    $result = @$f->loadHTML('<htmlfragment>'.$value.'</htmlfragment>');
+                    $result = @$f->loadHTML('<htmlfragment>' . $value . '</htmlfragment>');
 
                     if ($result) {
                         $import = $f->getElementsByTagName('htmlfragment')->item(0);
@@ -89,7 +89,7 @@ class JSLikeHTMLElement extends \DOMElement
             }
         } else {
             $trace = debug_backtrace();
-            trigger_error('Undefined property via __set(): '.$name.' in '.$trace[0]['file'].' on line '.$trace[0]['line'], E_USER_NOTICE);
+            trigger_error('Undefined property via __set(): ' . $name . ' in ' . $trace[0]['file'] . ' on line ' . $trace[0]['line'], E_USER_NOTICE);
         }
     }
 
@@ -102,7 +102,7 @@ class JSLikeHTMLElement extends \DOMElement
      */
     public function __get($name)
     {
-        if ($name == 'innerHTML') {
+        if ($name === 'innerHTML') {
             $inner = '';
 
             foreach ($this->childNodes as $child) {
@@ -113,13 +113,13 @@ class JSLikeHTMLElement extends \DOMElement
         }
 
         $trace = debug_backtrace();
-        trigger_error('Undefined property via __get(): '.$name.' in '.$trace[0]['file'].' on line '.$trace[0]['line'], E_USER_NOTICE);
+        trigger_error('Undefined property via __get(): ' . $name . ' in ' . $trace[0]['file'] . ' on line ' . $trace[0]['line'], E_USER_NOTICE);
 
         return;
     }
 
     public function __toString()
     {
-        return '['.$this->tagName.']';
+        return '[' . $this->tagName . ']';
     }
 }

@@ -243,10 +243,10 @@ class Readability implements LoggerAwareInterface
     {
         $this->original_html = $this->html;
 
-        $this->logger->debug('Parsing URL: '.$this->url);
+        $this->logger->debug('Parsing URL: ' . $this->url);
 
         if ($this->url) {
-            $this->domainRegExp = '/'.strtr(preg_replace('/www\d*\./', '', parse_url($this->url, PHP_URL_HOST)), array('.' => '\.')).'/';
+            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, PHP_URL_HOST)), array('.' => '\.')) . '/';
         }
 
         mb_internal_encoding('UTF-8');
@@ -284,7 +284,7 @@ class Readability implements LoggerAwareInterface
 
         $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
 
-        if (!($this->parser == 'html5lib' && ($this->dom = \HTML5_Parser::parse($this->html)))) {
+        if (!($this->parser === 'html5lib' && ($this->dom = \HTML5_Parser::parse($this->html)))) {
             libxml_use_internal_errors(true);
 
             $this->dom = new \DOMDocument();
@@ -325,7 +325,7 @@ class Readability implements LoggerAwareInterface
         $bodyElems = $this->dom->getElementsByTagName('body');
 
         // WTF multiple body nodes?
-        if ($this->bodyCache == null) {
+        if ($this->bodyCache === null) {
             $this->bodyCache = '';
             foreach ($bodyElems as $bodyNode) {
                 $this->bodyCache .= trim($bodyNode->innerHTML);
@@ -429,7 +429,7 @@ class Readability implements LoggerAwareInterface
             }
         } elseif (mb_strlen($curTitle) > 150 || mb_strlen($curTitle) < 15) {
             $hOnes = $this->dom->getElementsByTagName('h1');
-            if ($hOnes->length == 1) {
+            if ($hOnes->length === 1) {
                 $curTitle = $this->getInnerText($hOnes->item(0));
             }
         }
@@ -510,8 +510,8 @@ class Readability implements LoggerAwareInterface
             ++$linkCount;
 
             // Add a superscript reference after the article link.
-            $refLink->setAttribute('href', '#readabilityFootnoteLink-'.$linkCount);
-            $refLink->innerHTML = '<small><sup>['.$linkCount.']</sup></small>';
+            $refLink->setAttribute('href', '#readabilityFootnoteLink-' . $linkCount);
+            $refLink->innerHTML = '<small><sup>[' . $linkCount . ']</sup></small>';
             $refLink->setAttribute('class', 'readability-DoNotFootnote');
             $refLink->setAttribute('style', 'color: inherit;');
 
@@ -522,14 +522,14 @@ class Readability implements LoggerAwareInterface
             }
 
             $articleLink->setAttribute('style', 'color: inherit; text-decoration: none;');
-            $articleLink->setAttribute('name', 'readabilityLink-'.$linkCount);
-            $footnote->innerHTML = '<small><sup><a href="#readabilityLink-'.$linkCount.'" title="Jump to Link in Article">^</a></sup></small> ';
-            $footnoteLink->innerHTML = ($footnoteLink->getAttribute('title') != '' ? $footnoteLink->getAttribute('title') : $linkText);
-            $footnoteLink->setAttribute('name', 'readabilityFootnoteLink-'.$linkCount);
+            $articleLink->setAttribute('name', 'readabilityLink-' . $linkCount);
+            $footnote->innerHTML = '<small><sup><a href="#readabilityLink-' . $linkCount . '" title="Jump to Link in Article">^</a></sup></small> ';
+            $footnoteLink->innerHTML = ($footnoteLink->getAttribute('title') !== '' ? $footnoteLink->getAttribute('title') : $linkText);
+            $footnoteLink->setAttribute('name', 'readabilityFootnoteLink-' . $linkCount);
             $footnote->appendChild($footnoteLink);
 
             if ($linkDomain) {
-                $footnote->innerHTML = $footnote->innerHTML.'<small> ('.$linkDomain.')</small>';
+                $footnote->innerHTML = $footnote->innerHTML . '<small> (' . $linkDomain . ')</small>';
             }
             $articleFootnotes->appendChild($footnote);
         }
@@ -586,7 +586,7 @@ class Readability implements LoggerAwareInterface
          *  already have a header.
          */
         $h2s = $articleContent->getElementsByTagName('h2');
-        if ($h2s->length == 1 && mb_strlen($this->getInnerText($h2s->item(0), true, true)) < 100) {
+        if ($h2s->length === 1 && mb_strlen($this->getInnerText($h2s->item(0), true, true)) < 100) {
             $this->clean($articleContent, 'h2');
         }
 
@@ -631,7 +631,7 @@ class Readability implements LoggerAwareInterface
                 }
                 unset($search, $replace);
             } catch (\Exception $e) {
-                $this->logger->error('Cleaning output HTML failed. Ignoring: '.$e->getMessage());
+                $this->logger->error('Cleaning output HTML failed. Ignoring: ' . $e->getMessage());
             }
         }
     }
@@ -748,7 +748,7 @@ class Readability implements LoggerAwareInterface
                         --$nodeIndex;
                         $nodesToScore[] = $newNode;
                     } catch (\Exception $e) {
-                        $this->logger->error('Could not alter div/article to p, reverting back to div: '.$e->getMessage());
+                        $this->logger->error('Could not alter div/article to p, reverting back to div: ' . $e->getMessage());
                     }
                 } else {
                     // Will change these P elements back to text nodes after processing.
@@ -848,7 +848,7 @@ class Readability implements LoggerAwareInterface
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? strcasecmp($node->parentNode->tagName, 'article') !== 0 : true)) {
-                    $this->logger->debug('Removing unlikely candidate (using note) '.$node->getNodePath().' by "'.$node->tagName.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                 }
             }
@@ -860,13 +860,13 @@ class Readability implements LoggerAwareInterface
                 $node = $candidates->item($c);
 
                 // Remove unlikely candidates
-                $unlikelyMatchString = $node->getAttribute('class').' '.$node->getAttribute('id').' '.$node->getAttribute('style');
+                $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
 
                 if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
                     preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
                     !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
                 ) {
-                    $this->logger->debug('Removing unlikely candidate (using conf) '.$node->getNodePath().' by "'.$unlikelyMatchString.'" with readability '.($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                     --$nodeIndex;
                 }
@@ -893,7 +893,7 @@ class Readability implements LoggerAwareInterface
                 $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, PHP_ROUND_HALF_UP);
 
                 if (!$topCandidate || $readability->value > (int) $topCandidate->getAttribute('readability')) {
-                    $this->logger->debug('Candidate: '.$item->getNodePath().' ('.$item->getAttribute('class').':'.$item->getAttribute('id').') with score '.$readability->value);
+                    $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
                     $topCandidate = $item;
                 }
             }
@@ -942,7 +942,7 @@ class Readability implements LoggerAwareInterface
             }
         }
 
-        $this->logger->debug('Top candidate: '.$topCandidate->getNodePath());
+        $this->logger->debug('Top candidate: ' . $topCandidate->getNodePath());
 
         /*
          * Now that we have the top candidate, look through its siblings for content that might also be related.
@@ -962,7 +962,7 @@ class Readability implements LoggerAwareInterface
             $siblingNode = $siblingNodes->item($s);
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
-            $this->logger->debug('Looking at sibling node: '.$siblingNode->getNodePath().(($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->hasAttribute('readability')) ? (' with score '.$siblingNode->getAttribute('readability')) : ''));
+            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . (($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
 
             if ($siblingNode->isSameNode($topCandidate)) {
                 $append = true;
@@ -971,7 +971,7 @@ class Readability implements LoggerAwareInterface
             $contentBonus = 0;
 
             // Give a bonus if sibling nodes and top candidates have the same classname.
-            if ($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->getAttribute('class') == $topCandidate->getAttribute('class') && $topCandidate->getAttribute('class') != '') {
+            if ($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && $topCandidate->getAttribute('class') !== '') {
                 $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
             }
 
@@ -991,18 +991,18 @@ class Readability implements LoggerAwareInterface
             }
 
             if ($append) {
-                $this->logger->debug('Appending node: '.$siblingNode->getNodePath());
+                $this->logger->debug('Appending node: ' . $siblingNode->getNodePath());
 
                 if (strcasecmp($siblingNodeName, 'div') !== 0 && strcasecmp($siblingNodeName, 'p') !== 0) {
                     // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
-                    $this->logger->debug('Altering siblingNode "'.$siblingNodeName.'" to "div".');
+                    $this->logger->debug('Altering siblingNode "' . $siblingNodeName . '" to "div".');
                     $nodeToAppend = $this->dom->createElement('div');
 
                     try {
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
                         $nodeToAppend->innerHTML = $siblingNode->innerHTML;
                     } catch (\Exception $e) {
-                        $this->logger->debug('Could not alter siblingNode "'.$siblingNodeName.'" to "div", reverting to original.');
+                        $this->logger->debug('Could not alter siblingNode "' . $siblingNodeName . '" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
                         --$s;
                         --$sl;
@@ -1038,17 +1038,17 @@ class Readability implements LoggerAwareInterface
 
             if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS)) {
                 $this->removeFlag(self::FLAG_STRIP_UNLIKELYS);
-                $this->logger->debug('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to strip unlikely content.\n");
+                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to strip unlikely content.\n");
 
                 return $this->grabArticle($this->body);
             } elseif ($this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
                 $this->removeFlag(self::FLAG_WEIGHT_ATTRIBUTES);
-                $this->logger->debug('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to weight attributes.\n");
+                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to weight attributes.\n");
 
                 return $this->grabArticle($this->body);
             } elseif ($this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
                 $this->removeFlag(self::FLAG_CLEAN_CONDITIONALLY);
-                $this->logger->debug('...content is shorter than '.self::MIN_ARTICLE_LENGTH." letters, trying not to clean at all.\n");
+                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to clean at all.\n");
 
                 return $this->grabArticle($this->body);
             }
@@ -1178,7 +1178,7 @@ class Readability implements LoggerAwareInterface
         // $attributeValue = trim($element->getAttribute('class')." ".$element->getAttribute('id'));
         $attributeValue = trim($element->getAttribute($attribute));
 
-        if ($attributeValue != '') {
+        if ($attributeValue !== '') {
             if (preg_match($this->regexps['negative'], $attributeValue)) {
                 $weight -= 25;
             }
@@ -1250,7 +1250,7 @@ class Readability implements LoggerAwareInterface
             $currentItem = $targetList->item($y);
 
             if ($isEmbed) {
-                $attributeValues = $currentItem->getAttribute('src').' '.$currentItem->getAttribute('href');
+                $attributeValues = $currentItem->getAttribute('src') . ' ' . $currentItem->getAttribute('href');
 
                 // First, check the elements attributes to see if any of them contain known media hosts
                 if (preg_match($this->regexps['media'], $attributeValues)) {
@@ -1295,7 +1295,7 @@ class Readability implements LoggerAwareInterface
             $node = $tagsList->item($i);
             $weight = $this->getWeight($node);
             $contentScore = ($node->hasAttribute('readability')) ? (int) $node->getAttribute('readability') : 0;
-            $this->logger->debug('Start conditional cleaning of '.$node->getNodePath().' (class='.$node->getAttribute('class').'; id='.$node->getAttribute('id').')'.(($node->hasAttribute('readability')) ? (' with score '.$node->getAttribute('readability')) : ''));
+            $this->logger->debug('Start conditional cleaning of ' . $node->getNodePath() . ' (class=' . $node->getAttribute('class') . '; id=' . $node->getAttribute('id') . ')' . (($node->hasAttribute('readability')) ? (' with score ' . $node->getAttribute('readability')) : ''));
 
             if ($weight + $contentScore < 0) {
                 $this->logger->debug('Removing...');
@@ -1331,7 +1331,7 @@ class Readability implements LoggerAwareInterface
                 $toRemove = false;
 
                 if ($this->lightClean) {
-                    if ($li > $p && $tag != 'ul' && $tag != 'ol') {
+                    if ($li > $p && $tag !== 'ul' && $tag !== 'ol') {
                         $this->logger->debug(' too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
@@ -1341,10 +1341,10 @@ class Readability implements LoggerAwareInterface
                         $this->logger->debug(' content length less than 6 chars, 0 embeds and either 0 images or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.25) {
-                        $this->logger->debug(' weight is '.$weight.' < 25 and link density is '.sprintf('%.2f', $linkDensity).' > 0.25');
+                        $this->logger->debug(' weight is ' . $weight . ' < 25 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.25');
                         $toRemove = true;
                     } elseif ($a > 2 && ($weight >= 25 && $linkDensity > 0.5)) {
-                        $this->logger->debug('  more than 2 links and weight is '.$weight.' > 25 but link density is '.sprintf('%.2f', $linkDensity).' > 0.5');
+                        $this->logger->debug('  more than 2 links and weight is ' . $weight . ' > 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
                         $toRemove = true;
                     } elseif ($embedCount > 3) {
                         $this->logger->debug(' more than 3 embeds');
@@ -1354,7 +1354,7 @@ class Readability implements LoggerAwareInterface
                     if ($img > $p) {
                         $this->logger->debug(' more image elements than paragraph elements');
                         $toRemove = true;
-                    } elseif ($li > $p && $tag != 'ul' && $tag != 'ol') {
+                    } elseif ($li > $p && $tag !== 'ul' && $tag !== 'ol') {
                         $this->logger->debug('  too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
@@ -1364,12 +1364,12 @@ class Readability implements LoggerAwareInterface
                         $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.2) {
-                        $this->logger->debug('  weight is '.$weight.' lower than 0 and link density is '.sprintf('%.2f', $linkDensity).' > 0.2');
+                        $this->logger->debug('  weight is ' . $weight . ' lower than 0 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.2');
                         $toRemove = true;
                     } elseif ($weight >= 25 && $linkDensity > 0.5) {
-                        $this->logger->debug('  weight above 25 but link density is '.sprintf('%.2f', $linkDensity).' > 0.5');
+                        $this->logger->debug('  weight above 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
                         $toRemove = true;
-                    } elseif (($embedCount == 1 && $contentLength < 75) || $embedCount > 1) {
+                    } elseif (($embedCount === 1 && $contentLength < 75) || $embedCount > 1) {
                         $this->logger->debug('  1 embed and content length smaller than 75 chars, or more than one embed');
                         $toRemove = true;
                     }
@@ -1391,7 +1391,7 @@ class Readability implements LoggerAwareInterface
     public function cleanHeaders($e)
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
-            $headers = $e->getElementsByTagName('h'.$headerIndex);
+            $headers = $e->getElementsByTagName('h' . $headerIndex);
 
             for ($i = $headers->length - 1; $i >= 0; --$i) {
                 if ($this->getWeight($headers->item($i)) < 0 || $this->getLinkDensity($headers->item($i)) > 0.33) {

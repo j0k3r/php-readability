@@ -10,6 +10,9 @@ php:
     - hhvm
 
 matrix:
+    include:
+        - php: 7.0
+          env: CS_FIXER=run
     fast_finish: true
     allow_failures:
         - php: hhvm
@@ -37,6 +40,7 @@ before_script:
 script:
     - mkdir -p build/logs
     - phpunit -v --coverage-clover build/logs/clover.xml
+    - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/php-cs-fixer fix --verbose --dry-run ; fi;
 
 after_script:
     - php vendor/bin/coveralls -v
