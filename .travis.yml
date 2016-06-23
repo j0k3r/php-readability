@@ -26,15 +26,17 @@ cache:
         - vendor
         - $HOME/.composer/cache
 
-install:
-    - composer self-update
-
-before_script:
+before_install:
     - if [ -n "$GH_TOKEN" ]; then composer config github-oauth.github.com ${GH_TOKEN}; fi;
     # disable TLS for composer because openssl is disabled for PHP 5.3.3 on travis
     # see: https://blog.travis-ci.com/upcoming_ubuntu_11_10_migration/
     - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- disable-tls true; fi;
     - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- secure-http false; fi;
+
+install:
+    - composer self-update
+
+before_script:
     - composer install --prefer-dist --no-interaction
 
 script:
