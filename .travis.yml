@@ -10,6 +10,9 @@ php:
     - hhvm
 
 matrix:
+    include:
+        - php: 7.0
+          env: CS_FIXER=run
     fast_finish: true
     allow_failures:
         - php: hhvm
@@ -23,20 +26,23 @@ cache:
         - vendor
         - $HOME/.composer/cache
 
-install:
-    - composer self-update
-
-before_script:
+before_install:
     - if [ -n "$GH_TOKEN" ]; then composer config github-oauth.github.com ${GH_TOKEN}; fi;
     # disable TLS for composer because openssl is disabled for PHP 5.3.3 on travis
     # see: https://blog.travis-ci.com/upcoming_ubuntu_11_10_migration/
     - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- disable-tls true; fi;
     - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- secure-http false; fi;
+
+install:
+    - composer self-update
+
+before_script:
     - composer install --prefer-dist --no-interaction
 
 script:
     - mkdir -p build/logs
     - phpunit -v --coverage-clover build/logs/clover.xml
+    - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/php-cs-fixer fix --verbose --dry-run ; fi;
 
 after_script:
     - php vendor/bin/coveralls -v

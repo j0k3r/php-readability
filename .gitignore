@@ -1,3 +1,4 @@
 vendor/
 coverage/
 composer.lock
+.php_cs.cache
