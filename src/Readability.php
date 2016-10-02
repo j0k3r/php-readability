@@ -87,7 +87,7 @@ class Readability implements LoggerAwareInterface
         'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page/i',
         'positive' => '/read|full|article|body|\bcontent|contain|entry|main|markdown|page|attach|pagination|post|text|blog|story/i',
         'negative' => '/bottom|stat|info|discuss|e[\-]?mail|comment|reply|log.{2}(n|ed)|sign|single|combx|com-|contact|_nav|link|media|\bout|promo|\bad-|related|scroll|shoutbox|sidebar|sponsor|shopping|teaser|recommend/i',
-        'divToPElements' => '/<(?:blockquote|code|div|article|footer|aside|img|p|pre|dl|ol|ul)/mi',
+        'divToPElements' => '/<(?:blockquote|header|section|code|div|article|footer|aside|img|p|pre|dl|ol|ul)/mi',
         'killBreaks' => '/(<br\s*\/?>([ \r\n\s]|&nbsp;?)*)+/',
         'media' => '!//(?:[^\.\?/]+\.)?(?:youtu(?:be)?|soundcloud|dailymotion|vimeo|pornhub|xvideos|twitvid|rutube|viddler)\.(?:com|be|org|net)/!i',
         'skipFootnoteLink' => '/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i',
@@ -376,6 +376,7 @@ class Readability implements LoggerAwareInterface
      * Debug.
      *
      * @deprecated use $this->logger->debug() instead
+     * @codeCoverageIgnore
      */
     protected function dbg($msg)
     {
@@ -386,6 +387,7 @@ class Readability implements LoggerAwareInterface
      * Dump debug info.
      *
      * @deprecated since Monolog gather log, we don't need it
+     * @codeCoverageIgnore
      */
     protected function dump_dbg()
     {
@@ -730,8 +732,9 @@ class Readability implements LoggerAwareInterface
 
         for ($nodeIndex = 0; ($node = $allElements->item($nodeIndex)); ++$nodeIndex) {
             $tagName = $node->tagName;
+
             // Some well known site uses sections as paragraphs.
-            if (strcasecmp($tagName, 'p') === 0 || strcasecmp($tagName, 'td') === 0 || strcasecmp($tagName, 'section') === 0) {
+            if (strcasecmp($tagName, 'p') === 0 || strcasecmp($tagName, 'td') === 0 || strcasecmp($tagName, 'pre') === 0 || strcasecmp($tagName, 'section') === 0) {
                 $nodesToScore[] = $node;
             }
 
