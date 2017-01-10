@@ -758,6 +758,11 @@ class Readability implements LoggerAwareInterface
                     for ($i = 0, $il = $node->childNodes->length; $i < $il; ++$i) {
                         $childNode = $node->childNodes->item($i);
 
+                        // it looks like sometimes the loop is going too far and we are retrieving a non-existant child
+                        if (null === $childNode) {
+                            continue;
+                        }
+
                         // executable tags (<?php or <?xml) warning
                         if (is_object($childNode) && get_class($childNode) === 'DOMProcessingInstruction') {
                             $childNode->parentNode->removeChild($childNode);
