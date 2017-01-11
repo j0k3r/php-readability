@@ -464,4 +464,17 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($res);
         $this->assertContains('This the awesome and WONDERFUL content :)', $readability->getContent()->innerHTML);
     }
+
+    public function testChildNodeGoneNull()
+    {
+        // from http://www.ayyaantuu.net/ethiopia-targets-opposition-lawmakers/
+        $html = file_get_contents('tests/fixtures/childNodeGoesNull.html');
+
+        $readability = $this->getReadability($html, 'http://0.0.0.0');
+        $readability->debug = true;
+        $readability->convertLinksToFootnotes = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+    }
 }
