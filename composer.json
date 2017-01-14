@@ -25,11 +25,12 @@
     }],
     "require": {
         "php": ">=5.3.3",
-        "monolog/monolog": "^1.13"
+        "psr/log": "^1.0"
     },
     "require-dev": {
         "satooshi/php-coveralls": "~0.6",
-        "friendsofphp/php-cs-fixer": "<2"
+        "friendsofphp/php-cs-fixer": "<2",
+        "monolog/monolog": "^1.13"
     },
     "autoload": {
         "psr-4": { "Readability\\": "src/" }
