@@ -32,6 +32,9 @@
         "friendsofphp/php-cs-fixer": "<2",
         "monolog/monolog": "^1.13"
     },
+    "suggest": {
+        "ext-tidy": "Used to clean up given HTML and to avoid problems with bad HTML structure."
+    },
     "autoload": {
         "psr-4": { "Readability\\": "src/" }
     }
