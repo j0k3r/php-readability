@@ -17,9 +17,9 @@ The default php-readability lib is really old and needs to be improved. I found 
 
 ## Requirements
 
-By default, this lib will use the [Tidy extension](https://github.com/htacg/tidy-html5) if it's available. Tidy is only used to cleanup the given HTML and avoid problems with bad HTML structure, etc ..
+By default, this lib will use the [Tidy extension](https://github.com/htacg/tidy-html5) if it's available. Tidy is only used to cleanup the given HTML and avoid problems with bad HTML structure, etc .. It'll be suggested by Composer.
 
-Since Composer doesn't support suggestion on PHP extension, I write this suggestion here.
+Also, if you got problem from parsing a content without Tidy installed, please install it and try again.
 
 ## Usage
 
