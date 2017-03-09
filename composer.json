@@ -30,7 +30,8 @@
     "require-dev": {
         "satooshi/php-coveralls": "~0.6",
         "friendsofphp/php-cs-fixer": "<2",
-        "monolog/monolog": "^1.13"
+        "monolog/monolog": "^1.13",
+        "symfony/phpunit-bridge": "^3.2"
     },
     "suggest": {
         "ext-tidy": "Used to clean up given HTML and to avoid problems with bad HTML structure."
