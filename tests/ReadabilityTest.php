@@ -443,7 +443,7 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
     public function testPostFilters()
     {
-        $readability = $this->getReadability('<div>' . str_repeat('<p>This <b>is</b> the awesome content :)</p>', 7) . '</div>', 'http://0.0.0.0');
+        $readability = $this->getReadability('<div>' . str_repeat('<p>This <b>is</b> the awesome content :)</p>', 10) . '</div>', 'http://0.0.0.0');
         $readability->addPostFilter('!<strong[^>]*>(.*?)</strong>!is', '');
 
         $res = $readability->init();
