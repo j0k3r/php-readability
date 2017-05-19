@@ -45,52 +45,59 @@ class JSLikeHTMLElement extends \DOMElement
      */
     public function __set($name, $value)
     {
-        if ($name === 'innerHTML') {
-            // first, empty the element
-            for ($x = $this->childNodes->length - 1; $x >= 0; --$x) {
-                $this->removeChild($this->childNodes->item($x));
-            }
-
-            // $value holds our new inner HTML
-            if ($value !== '') {
-                $f = $this->ownerDocument->createDocumentFragment();
-
-                // appendXML() expects well-formed markup (XHTML)
-                // @ to suppress PHP warnings
-                $result = @$f->appendXML($value);
-                if ($result) {
-                    if ($f->hasChildNodes()) {
-                        $this->appendChild($f);
-                    }
-                } else {
-                    // $value is probably ill-formed
-                    $f = new \DOMDocument();
-                    $value = mb_convert_encoding($value, 'HTML-ENTITIES', 'UTF-8');
-
-                    // Using <htmlfragment> will generate a warning, but so will bad HTML
-                    // (and by this point, bad HTML is what we've got).
-                    // We use it (and suppress the warning) because an HTML fragment will
-                    // be wrapped around <html><body> tags which we don't really want to keep.
-                    // Note: despite the warning, if loadHTML succeeds it will return true.
-                    $result = @$f->loadHTML('<htmlfragment>' . $value . '</htmlfragment>');
-
-                    if ($result) {
-                        $import = $f->getElementsByTagName('htmlfragment')->item(0);
-
-                        foreach ($import->childNodes as $child) {
-                            $importedNode = $this->ownerDocument->importNode($child, true);
-                            $this->appendChild($importedNode);
-                        }
-                    } else {
-                        // oh well, we tried, we really did. :(
-                        // this element is now empty
-                    }
-                }
-            }
-        } else {
+        if ($name !== 'innerHTML') {
             $trace = debug_backtrace();
             trigger_error('Undefined property via __set(): ' . $name . ' in ' . $trace[0]['file'] . ' on line ' . $trace[0]['line'], E_USER_NOTICE);
+
+            return;
         }
+
+        // first, empty the element
+        for ($x = $this->childNodes->length - 1; $x >= 0; --$x) {
+            $this->removeChild($this->childNodes->item($x));
+        }
+
+        // $value holds our new inner HTML
+        $value = trim($value);
+        if (empty($value)) {
+            return;
+        }
+
+        // ensure bad entity won't generate warning
+        $previousError = libxml_use_internal_errors(true);
+
+        $f = $this->ownerDocument->createDocumentFragment();
+
+        // appendXML() expects well-formed markup (XHTML)
+        $result = $f->appendXML($value);
+        if ($result) {
+            if ($f->hasChildNodes()) {
+                $this->appendChild($f);
+            }
+        } else {
+            // $value is probably ill-formed
+            $f = new \DOMDocument();
+            $value = mb_convert_encoding($value, 'HTML-ENTITIES', 'UTF-8');
+
+            // Using <htmlfragment> will generate a warning, but so will bad HTML
+            // (and by this point, bad HTML is what we've got).
+            // We use it (and suppress the warning) because an HTML fragment will
+            // be wrapped around <html><body> tags which we don't really want to keep.
+            // Note: despite the warning, if loadHTML succeeds it will return true.
+            $result = $f->loadHTML('<htmlfragment>' . $value . '</htmlfragment>');
+
+            if ($result) {
+                $import = $f->getElementsByTagName('htmlfragment')->item(0);
+
+                foreach ($import->childNodes as $child) {
+                    $importedNode = $this->ownerDocument->importNode($child, true);
+                    $this->appendChild($importedNode);
+                }
+            }
+        }
+
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousError);
     }
 
     /**
