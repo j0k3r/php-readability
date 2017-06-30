@@ -2,10 +2,10 @@
 
 namespace Readability;
 
+use HTML5Lib\Parser;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use HTML5Lib\Parser;
 
 /**
  * Arc90's Readability ported to PHP for FiveFilters.org
