@@ -2,6 +2,7 @@
 
 namespace Readability;
 
+use HTML5Lib\Parser;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -284,7 +285,7 @@ class Readability implements LoggerAwareInterface
 
         $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
 
-        if (!($this->parser === 'html5lib' && ($this->dom = \HTML5_Parser::parse($this->html)))) {
+        if (!($this->parser === 'html5lib' && ($this->dom = Parser::parse($this->html)))) {
             libxml_use_internal_errors(true);
 
             $this->dom = new \DOMDocument();
