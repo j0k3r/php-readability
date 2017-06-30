@@ -33,6 +33,15 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('DomDocument', $readability->dom);
     }
 
+    public function testConstructHtml5Parser()
+    {
+        $readability = $this->getReadability('<html/>', 'http://0.0.0.0', 'html5lib');
+
+        $this->assertEquals('http://0.0.0.0', $readability->url);
+        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertEquals('<html/>', $readability->original_html);
+    }
+
     /**
      * @requires extension tidy
      */
@@ -325,13 +334,6 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->innerHTML);
         $this->assertNotContains('This text is also an awesome text and you should know that', $readability->getContent()->innerHTML);
     }
-
-    // public function testConstructParser()
-    // {
-    //     $readability = $this->getReadability('<html/>', 'http://0.0.0.0', 'html5lib');
-
-    //     $this->assertEquals('http://0.0.0.0', $readability->url);
-    // }
 
     // dummy function to be used to the next test
     public function error2Exception($code, $string, $file, $line, $context)
