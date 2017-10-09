@@ -11,17 +11,6 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
     public $logHandler;
     public $logger;
 
-    private function getReadability($html, $url = null, $parser = 'libxml', $useTidy = true)
-    {
-        $readability = new Readability($html, $url, $parser, $useTidy);
-
-        $this->logHandler = new TestHandler();
-        $this->logger = new Logger('test', array($this->logHandler));
-        $readability->setLogger($this->logger);
-
-        return $readability;
-    }
-
     /**
      * @requires extension tidy
      */
@@ -478,5 +467,16 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
         $res = $readability->init();
 
         $this->assertTrue($res);
+    }
+
+    private function getReadability($html, $url = null, $parser = 'libxml', $useTidy = true)
+    {
+        $readability = new Readability($html, $url, $parser, $useTidy);
+
+        $this->logHandler = new TestHandler();
+        $this->logger = new Logger('test', array($this->logHandler));
+        $readability->setLogger($this->logger);
+
+        return $readability;
     }
 }
