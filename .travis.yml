@@ -1,24 +1,32 @@
 language: php
 
 php:
-    - 5.3.3
-    - 5.3
-    - 5.4
     - 5.5
     - 5.6
     - 7.0
     - 7.1
+    - 7.2
     - nightly
     - hhvm
 
 matrix:
     include:
+        - php: 5.3.3
+          dist: precise
+          sudo: required
+        - php: 5.3
+          dist: precise
+          sudo: required
+        - php: 5.4
+          dist: precise
+          sudo: required
         - php: 7.0
           env: CS_FIXER=run
     fast_finish: true
     allow_failures:
-        - php: hhvm
+        - php: 7.2
         - php: nightly
+        - php: hhvm
 
 # faster builds on new travis setup not using sudo
 sudo: false
