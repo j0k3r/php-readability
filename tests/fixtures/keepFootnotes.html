@@ -1,0 +1,54 @@
+<article>
+    
+    <h1>Feed-Aggregator und Sp&auml;ter-Lesen-Dienst im Team</h1>
+    
+        <figure>
+            <img src="https://www.schreibdichte.de/content/1-blog/20170505-feed-aggregator-und-spaeter-lesen-dienst-im-team/workflow.png" alt="Feed-Aggregator und Sp&auml;ter-Lesen-Dienst im Team" >
+        </figure>
+    
+    <time datetime="2017-05-05T18:40:00+00:00" >05.05.2017</time>
+    
+    <p> <span class="tag">Tags:</span>
+    <ul class="tag_list">
+                <li><a href="https://www.schreibdichte.de/blog/tag:Software">Software</a></li>
+                <li><a href="https://www.schreibdichte.de/blog/tag:Web">Web</a></li>
+                <li><a href="https://www.schreibdichte.de/blog/tag:Tools">Tools</a></li>
+        </ul>
+    <p>
+    
+    <div class="content">
+    <p>Dank einer Mitteilung <sup id="fnref1:fnfeed_1"><a href="#fn:fnfeed_1" class="footnote-ref">1</a></sup> im OSBN <sup id="fnref1:fnfeed_2"><a href="#fn:fnfeed_2" class="footnote-ref">2</a></sup>, bin ich auf den Feed-Aggregator Miniflux <sup id="fnref1:fnfeed_3"><a href="#fn:fnfeed_3" class="footnote-ref">3</a></sup> aufmerksam geworden. Ich hatte schon lange nach einer Alternative zu Fever <sup id="fnref1:fnfeed_4"><a href="#fn:fnfeed_4" class="footnote-ref">4</a></sup> gesucht, da der Anschein vorlag, dass die Entwicklung nicht mehr weiter ging. Was sich bestätigte.</p>
+    <p>Miniflux ist prima, einfach gehalten und erledigt genau dass, was es machen soll. Zudem wird die Fever-API unterstützt, was bedeutet, dass ich weiterhin meine Feed-Reader nutzen kann, was den Dialog mit Miniflux auf dem Server betrifft. Das ist deshalb interessant, um den Lesestatus oder das Favorisieren von Feeds zentral auf dem Server zu berücksichtigen und nicht lokal. So habe ich sowohl auf dem lokalen Rechner, als auch auf allen mobilen Geräten den gleichen Stand und Status meiner abonnierten Feeds.</p>
+    <p>Für das spätere Lesen von Webseiten, nutze ich seit längerem wallabag <sup id="fnref1:fnfeed_5"><a href="#fn:fnfeed_5" class="footnote-ref">5</a></sup>. Wallabag wird mit Inhalten über den Browser gefüttert. Die Webseiten werden bei der Konservierung von Werbung befreit, damit der reine Text vorliegt. Bilder dagegen nicht und gehen evtl. verloren, wenn es die Quelle mal nicht mehr geben sollte. Ich habe also zwei Orte, an denen Informationen gehalten werden. Miniflux zur Verwaltung von Feed-Nachrichten und Wallabag für Webseiten.</p>
+    <p>Bei einem Update von Miniflux ist mit aufgefallen, dass es nun eine API für Wallabag gibt. Dabei werden alle gespeicherten Feeds von Miniflux an Wallabag übergeben. Eine prima Angelegenheit, da ich jetzt nur noch einen Topf habe, woraus ich meine gesammelten Informationen aus dem Netz entnehme.</p>
+    <p>Miniflux als auch wallabag sind selbst gehostete Web-Applikationen, die auch über den Browser erreichbar sind. Native wallabag-Apps für iOS bzw. Android werden ebenfalls angeboten. Wallabag bietet zusätzlich einen Feed an, um die gesammelten Informationen per Feed-Reader zu lesen. Hierbei drängt sich evtl. die Idee auf, diesen Feed wieder in Miniflux zu abonnieren, da dann zentral alles aus verschiedenen Quellen vorliegt. Hier hätten wir allerdings eine gewisse Redundanz.</p>
+    <p>Ich nutze seit ein paar Monaten Devonthink <sup id="fnref1:fnfeed_6"><a href="#fn:fnfeed_6" class="footnote-ref">6</a></sup> auf dem Mac. Das ist eine lokale Dokumentenverwaltung (DMS), die heute u.a. meine Bücher, Notizen und mein Mail-Archiv verwaltet und ihre Stärke u.a. in der Suche von Informationen hat. Devonthink versteht es auch Feeds zu abonnieren. Für mich war dies der Moment, nun den Feed von wallabag mit all meinen gespeicherten Informationen aus dem Web mit zu integrieren. Ich muss sagen, eine runde Lösung, denn jetzt habe ich für die lokale Suche und das Lesen eine zentrale Stelle.</p>
+    <p>Die Grafik veranschaulicht das Teamplay zwischen Feed-Aggregator Miniflux und wallabag als Später-Lesen-Dienst, zusammengeführt in Devonthink. Ich kenne leider keine Dokumentenverwaltung für Linux oder Windows, die auch Feeds versteht. Wer etwas kennt, bitte melden. Wer zudem etwas zum Thema hören möchte, für dem ist ggf. die Podcast-Folge &quot;Der eigene Workflow&quot; <sup id="fnref1:fnfeed_7"><a href="#fn:fnfeed_7" class="footnote-ref">7</a></sup> interessant.</p>
+    <div class="footnotes">
+    <hr />
+    <ol>
+    <li id="fn:fnfeed_1">
+    <p>Artikel zu Miniflux: <a href="Link"><a href="https://www.robbinaer.info/index.php?post/78">https://www.robbinaer.info/index.php?post/78</a></a>&#160;<a href="#fnref1:fnfeed_1" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    <li id="fn:fnfeed_2">
+    <p>OSBN: <a href="Link"><a href="https://osbn.de">https://osbn.de</a></a>&#160;<a href="#fnref1:fnfeed_2" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    <li id="fn:fnfeed_3">
+    <p>Miniflux: <a href="Link"><a href="https://miniflux.net">https://miniflux.net</a></a>&#160;<a href="#fnref1:fnfeed_3" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    <li id="fn:fnfeed_4">
+    <p>Fever: <a href="Link"><a href="https://feedafever.com">https://feedafever.com</a></a>&#160;<a href="#fnref1:fnfeed_4" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    <li id="fn:fnfeed_5">
+    <p>wallabag: <a href="Link"><a href="https://wallabag.org/de">https://wallabag.org/de</a></a>&#160;<a href="#fnref1:fnfeed_5" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    <li id="fn:fnfeed_6">
+    <p>Devonthink: <a href="Link"><a href="http://www.devontechnologies.com/de/produkte/devonthink/ueberblick.html">http://www.devontechnologies.com/de/produkte/devonthink/ueberblick.html</a></a>&#160;<a href="#fnref1:fnfeed_6" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    <li id="fn:fnfeed_7">
+    <p>Podcast MacMittwoch: <a href="Link"><a href="https://itunes.apple.com/de/podcast/macmittwoch/id1212750085?mt=2ueberblick.html">https://itunes.apple.com/de/podcast/macmittwoch/id1212750085?mt=2ueberblick.html</a></a>&#160;<a href="#fnref1:fnfeed_7" rev="footnote" class="footnote-backref">&#8617;</a></p>
+    </li>
+    </ol>
+    </div></div>
+    
+    </article>

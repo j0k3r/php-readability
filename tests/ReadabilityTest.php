@@ -479,4 +479,18 @@ class ReadabilityTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($res);
     }
+
+    public function testKeepFootnotes()
+    {
+        // from https://www.schreibdichte.de/blog/feed-aggregator-und-spaeter-lesen-dienst-im-team
+        $html = file_get_contents('tests/fixtures/keepFootnotes.html');
+
+        $readability = $this->getReadability($html, 'http://0.0.0.0');
+        $readability->debug = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertContains('<sup id="fnref1:fnfeed_2"><a href="#fn:fnfeed_2" class="footnote-ref">2</a></sup>', $readability->getContent()->innerHTML);
+        $this->assertContains('<a href="#fnref1:fnfeed_2" rev="footnote"', $readability->getContent()->innerHTML);
+    }
 }
