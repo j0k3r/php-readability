@@ -6,6 +6,7 @@ php:
     - 7.0
     - 7.1
     - 7.2
+    - 7.3
     - nightly
     - hhvm
 
@@ -24,12 +25,9 @@ matrix:
           env: CS_FIXER=run
     fast_finish: true
     allow_failures:
-        - php: 7.2
+        - php: 7.3
         - php: nightly
         - php: hhvm
-
-# faster builds on new travis setup not using sudo
-sudo: false
 
 # cache vendor dirs
 cache:

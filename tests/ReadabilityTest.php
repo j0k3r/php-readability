@@ -6,7 +6,7 @@ use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use Readability\Readability;
 
-class ReadabilityTest extends \PHPUnit_Framework_TestCase
+class ReadabilityTest extends \PHPUnit\Framework\TestCase
 {
     public $logHandler;
     public $logger;
