@@ -90,7 +90,7 @@ class Readability implements LoggerAwareInterface
         'negative' => '/bottom|stat|info|discuss|e[\-]?mail|comment|reply|log.{2}(n|ed)|sign|single|combx|com-|contact|_nav|link|media|\bout|promo|\bad-|related|scroll|shoutbox|sidebar|sponsor|shopping|teaser|recommend/i',
         'divToPElements' => '/<(?:blockquote|header|section|code|div|article|footer|aside|img|p|pre|dl|ol|ul)/mi',
         'killBreaks' => '/(<br\s*\/?>([ \r\n\s]|&nbsp;?)*)+/',
-        'media' => '!//(?:[^\.\?/]+\.)?(?:youtu(?:be)?|soundcloud|dailymotion|vimeo|pornhub|xvideos|twitvid|rutube|viddler)\.(?:com|be|org|net)/!i',
+        'media' => '!//(?:[^\.\?/]+\.)?(?:youtu(?:be)?|giphy|soundcloud|dailymotion|vimeo|pornhub|xvideos|twitvid|rutube|viddler)\.(?:com|be|org|net)/!i',
         'skipFootnoteLink' => '/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i',
     );
     public $tidy_config = array(
