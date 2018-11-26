@@ -6,8 +6,8 @@ php:
     - 7.0
     - 7.1
     - 7.2
+    - 7.3
     - nightly
-    - hhvm
 
 matrix:
     include:
@@ -24,12 +24,8 @@ matrix:
           env: CS_FIXER=run
     fast_finish: true
     allow_failures:
-        - php: 7.2
+        - php: 7.3
         - php: nightly
-        - php: hhvm
-
-# faster builds on new travis setup not using sudo
-sudo: false
 
 # cache vendor dirs
 cache:
@@ -43,14 +39,12 @@ before_install:
     # see: https://blog.travis-ci.com/upcoming_ubuntu_11_10_migration/
     - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- disable-tls true; fi;
     - if [[ $TRAVIS_PHP_VERSION = 5.3.3 ]]; then composer config -g -- secure-http false; fi;
-    # no version compatible with PHP > 7.1
-    - if [[ $TRAVIS_PHP_VERSION = 7.2.* ]]; then composer remove friendsofphp/php-cs-fixer; fi;
 
 install:
     - composer self-update
 
 before_script:
-    - composer install --prefer-dist --no-interaction
+    - composer install -o --prefer-dist --no-interaction
 
 script:
     - mkdir -p build/logs
