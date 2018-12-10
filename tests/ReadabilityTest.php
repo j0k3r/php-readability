@@ -445,7 +445,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
 
     public function testPostFilters()
     {
-        $readability = $this->getReadability('<div>' . str_repeat('<p>This <b>is</b> the awesome content :)</p>', 10) . '</div>', 'http://0.0.0.0');
+        $readability = $this->getReadability('<div>' . str_repeat('<p>This <strong>is</strong> the awesome content :)</p>', 10) . '</div>', 'http://0.0.0.0');
         $readability->addPostFilter('!<strong[^>]*>(.*?)</strong>!is', '');
 
         $res = $readability->init();
