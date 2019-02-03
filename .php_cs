@@ -1,20 +1,25 @@
 <?php
 
-return Symfony\CS\Config\Config::create()
+return PhpCsFixer\Config::create()
     ->setUsingCache(true)
-    ->level(Symfony\CS\FixerInterface::SYMFONY_LEVEL)
-    // use default SYMFONY_LEVEL and extra fixers:
-    ->fixers(array(
-        'concat_with_spaces',
-        'ordered_use',
-        'phpdoc_order',
-        'strict',
-        'strict_param',
-        'long_array_syntax',
-    ))
-    ->finder(
-        Symfony\CS\Finder\DefaultFinder::create()
+    ->setRiskyAllowed(true)
+    ->setRules([
+        'concat_space' => [
+            'spacing' => 'one',
+        ],
+        'ordered_imports' => true,
+        'phpdoc_order' => true,
+        'strict_comparison' => true,
+        'strict_param' => true,
+        'array_syntax' => [
+            'syntax' => 'long',
+        ],
+    ])
+    ->setFinder(
+        PhpCsFixer\Finder::create()
+            ->exclude([
+                'vendor',
+            ])
             ->in(__DIR__)
-            ->exclude(array('vendor'))
     )
 ;

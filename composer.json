@@ -24,16 +24,16 @@
         "role": "Developer (original JS version)"
     }],
     "require": {
-        "php": ">=5.3.3",
+        "php": ">=5.6.0",
         "ext-mbstring": "*",
         "psr/log": "^1.0",
         "electrolinux/php-html5lib": "^0.1.0"
     },
     "require-dev": {
-        "satooshi/php-coveralls": "~0.6",
-        "friendsofphp/php-cs-fixer": "<2",
-        "monolog/monolog": "^1.13",
-        "symfony/phpunit-bridge": "^3.2"
+        "php-coveralls/php-coveralls": "^2.1",
+        "friendsofphp/php-cs-fixer": "^2.14",
+        "monolog/monolog": "^1.24",
+        "symfony/phpunit-bridge": "^4.2.3"
     },
     "suggest": {
         "ext-tidy": "Used to clean up given HTML and to avoid problems with bad HTML structure."
