@@ -52,6 +52,21 @@ use Psr\Log\NullLogger;
  */
 class Readability implements LoggerAwareInterface
 {
+    // flags
+    const FLAG_STRIP_UNLIKELYS = 1;
+    const FLAG_WEIGHT_ATTRIBUTES = 2;
+    const FLAG_CLEAN_CONDITIONALLY = 4;
+    const FLAG_DISABLE_PREFILTER = 8;
+    const FLAG_DISABLE_POSTFILTER = 16;
+    // constants
+    const SCORE_CHARS_IN_PARAGRAPH = 100;
+    const SCORE_WORDS_IN_PARAGRAPH = 20;
+    const GRANDPARENT_SCORE_DIVISOR = 2.2;
+    const MIN_PARAGRAPH_LENGTH = 20;
+    const MIN_COMMAS_IN_PARAGRAPH = 6;
+    const MIN_ARTICLE_LENGTH = 200;
+    const MIN_NODE_LENGTH = 80;
+    const MAX_LINK_DENSITY = 0.25;
     public $convertLinksToFootnotes = false;
     public $revertForcedParagraphElements = true;
     public $articleTitle;
@@ -65,25 +80,12 @@ class Readability implements LoggerAwareInterface
     // no more used, keept to avoid BC
     public $debug = false;
     public $tidied = false;
-    // article domain regexp for calibration
-    protected $domainRegExp = null;
-    protected $body = null;
-    // Cache the body HTML in case we need to re-use it later
-    protected $bodyCache = null;
-    // 1 | 2 | 4;   // Start with all processing flags set.
-    protected $flags = 7;
-    // indicates whether we were able to extract or not
-    protected $success = false;
-    protected $logger;
-    protected $parser;
-    protected $html;
-    protected $useTidy;
 
     /**
      * All of the regular expressions in use within readability.
      * Defined up here so we don't instantiate them repeatedly in loops.
      */
-    public $regexps = array(
+    public $regexps = [
         'unlikelyCandidates' => '/display\s*:\s*none|ignore|\binfos?\b|annoy|clock|date|time|author|intro|hidd?e|about|archive|\bprint|bookmark|tags|tag-list|share|search|social|robot|published|combx|comment|mast(?:head)|subscri|community|category|disqus|extra|head|head(?:er|note)|floor|foot(?:er|note)|menu|tool\b|function|nav|remark|rss|shoutbox|widget|meta|banner|sponsor|adsense|inner-?ad|ad-|sponsor|\badv\b|\bads\b|agr?egate?|pager|sidebar|popup|tweet|twitter/i',
         'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page|footnote/i',
         'positive' => '/read|full|article|body|\bcontent|contain|entry|main|markdown|media|page|attach|pagination|post|text|blog|story/i',
@@ -92,8 +94,8 @@ class Readability implements LoggerAwareInterface
         'killBreaks' => '/(<br\s*\/?>([ \r\n\s]|&nbsp;?)*)+/',
         'media' => '!//(?:[^\.\?/]+\.)?(?:youtu(?:be)?|giphy|soundcloud|dailymotion|vimeo|pornhub|xvideos|twitvid|rutube|viddler)\.(?:com|be|org|net)/!i',
         'skipFootnoteLink' => '/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i',
-    );
-    public $tidy_config = array(
+    ];
+    public $tidy_config = [
         'tidy-mark' => false,
         'vertical-space' => false,
         'doctype' => 'omit',
@@ -117,9 +119,22 @@ class Readability implements LoggerAwareInterface
         'input-encoding' => '????',
         'output-encoding' => 'utf8',
         'hide-comments' => true,
-    );
+    ];
+    // article domain regexp for calibration
+    protected $domainRegExp = null;
+    protected $body = null;
+    // Cache the body HTML in case we need to re-use it later
+    protected $bodyCache = null;
+    // 1 | 2 | 4;   // Start with all processing flags set.
+    protected $flags = 7;
+    // indicates whether we were able to extract or not
+    protected $success = false;
+    protected $logger;
+    protected $parser;
+    protected $html;
+    protected $useTidy;
     // raw HTML filters
-    protected $pre_filters = array(
+    protected $pre_filters = [
         // remove obvious scripts
         '!<script[^>]*>(.*?)</script>!is' => '',
         // remove obvious styles
@@ -134,9 +149,9 @@ class Readability implements LoggerAwareInterface
         //'!</?noscript>!is' => '',
         // replace fonts to spans
         '!<(/?)font[^>]*>!is' => '<\\1span>',
-    );
+    ];
     // output HTML filters
-    protected $post_filters = array(
+    protected $post_filters = [
         // replace excessive br's
         '/<br\s*\/?>\s*<p/i' => '<p',
         // replace empty tags that break layouts
@@ -149,23 +164,7 @@ class Readability implements LoggerAwareInterface
         '!<pre[^>]*>\s*<code!is' => '<pre',
         '!</code>\s*</pre>!is' => '</pre>',
         '!<[hb]r>!is' => '<\\1 />',
-    );
-
-    // flags
-    const FLAG_STRIP_UNLIKELYS = 1;
-    const FLAG_WEIGHT_ATTRIBUTES = 2;
-    const FLAG_CLEAN_CONDITIONALLY = 4;
-    const FLAG_DISABLE_PREFILTER = 8;
-    const FLAG_DISABLE_POSTFILTER = 16;
-    // constants
-    const SCORE_CHARS_IN_PARAGRAPH = 100;
-    const SCORE_WORDS_IN_PARAGRAPH = 20;
-    const GRANDPARENT_SCORE_DIVISOR = 2.2;
-    const MIN_PARAGRAPH_LENGTH = 20;
-    const MIN_COMMAS_IN_PARAGRAPH = 6;
-    const MIN_ARTICLE_LENGTH = 200;
-    const MIN_NODE_LENGTH = 80;
-    const MAX_LINK_DENSITY = 0.25;
+    ];
 
     /**
      * Create instance of Readability.
@@ -180,7 +179,7 @@ class Readability implements LoggerAwareInterface
         $this->url = $url;
         $this->html = $html;
         $this->parser = $parser;
-        $this->useTidy = $use_tidy && function_exists('tidy_parse_string');
+        $this->useTidy = $use_tidy && \function_exists('tidy_parse_string');
 
         $this->logger = new NullLogger();
         $this->loadHtml();
@@ -234,76 +233,6 @@ class Readability implements LoggerAwareInterface
     }
 
     /**
-     * Load HTML in a DOMDocument.
-     * Apply Pre filters
-     * Cleanup HTML using Tidy (or not).
-     *
-     * @todo This should be called in init() instead of from __construct
-     */
-    private function loadHtml()
-    {
-        $this->original_html = $this->html;
-
-        $this->logger->debug('Parsing URL: ' . $this->url);
-
-        if ($this->url) {
-            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, PHP_URL_HOST)), array('.' => '\.')) . '/';
-        }
-
-        mb_internal_encoding('UTF-8');
-        mb_http_output('UTF-8');
-        mb_regex_encoding('UTF-8');
-
-        // HACK: dirty cleanup to replace some stuff; shouldn't use regexps with HTML but well...
-        if (!$this->flagIsActive(self::FLAG_DISABLE_PREFILTER)) {
-            foreach ($this->pre_filters as $search => $replace) {
-                $this->html = preg_replace($search, $replace, $this->html);
-            }
-            unset($search, $replace);
-        }
-
-        if (trim($this->html) === '') {
-            $this->html = '<html></html>';
-        }
-
-        /*
-         * Use tidy (if it exists).
-         * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
-         * Although sometimes it makes matters worse, which is why there is an option to disable it.
-         */
-        if ($this->useTidy) {
-            $this->logger->debug('Tidying document');
-
-            $tidy = tidy_repair_string($this->html, $this->tidy_config, 'UTF8');
-            if (false !== $tidy && $this->html !== $tidy) {
-                $this->tidied = true;
-                $this->html = $tidy;
-                $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
-            }
-            unset($tidy);
-        }
-
-        $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
-
-        if (!($this->parser === 'html5lib' && ($this->dom = Parser::parse($this->html)))) {
-            libxml_use_internal_errors(true);
-
-            $this->dom = new \DOMDocument();
-            $this->dom->preserveWhiteSpace = false;
-
-            if (PHP_VERSION_ID >= 50400) {
-                $this->dom->loadHTML($this->html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
-            } else {
-                $this->dom->loadHTML($this->html);
-            }
-
-            libxml_use_internal_errors(false);
-        }
-
-        $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
-    }
-
-    /**
      * Runs readability.
      *
      * Workflow:
@@ -326,14 +255,14 @@ class Readability implements LoggerAwareInterface
         $bodyElems = $this->dom->getElementsByTagName('body');
 
         // WTF multiple body nodes?
-        if ($this->bodyCache === null) {
+        if (null === $this->bodyCache) {
             $this->bodyCache = '';
             foreach ($bodyElems as $bodyNode) {
                 $this->bodyCache .= trim($bodyNode->innerHTML);
             }
         }
 
-        if ($bodyElems->length > 0 && $this->body === null) {
+        if ($bodyElems->length > 0 && null === $this->body) {
             $this->body = $bodyElems->item(0);
         }
 
@@ -374,27 +303,6 @@ class Readability implements LoggerAwareInterface
     }
 
     /**
-     * Debug.
-     *
-     * @deprecated use $this->logger->debug() instead
-     * @codeCoverageIgnore
-     */
-    protected function dbg($msg)
-    {
-        $this->logger->debug($msg);
-    }
-
-    /**
-     * Dump debug info.
-     *
-     * @deprecated since Monolog gather log, we don't need it
-     * @codeCoverageIgnore
-     */
-    protected function dump_dbg()
-    {
-    }
-
-    /**
      * Run any post-process modifications to article content as necessary.
      *
      * @param \DOMElement $articleContent
@@ -403,77 +311,6 @@ class Readability implements LoggerAwareInterface
     {
         if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
-        }
-    }
-
-    /**
-     * Get the article title as an H1.
-     *
-     * @return \DOMElement
-     */
-    protected function getArticleTitle()
-    {
-        try {
-            $curTitle = $origTitle = $this->getInnerText($this->dom->getElementsByTagName('title')->item(0));
-        } catch (\Exception $e) {
-            $curTitle = '';
-            $origTitle = '';
-        }
-
-        if (preg_match('/ [\|\-] /', $curTitle)) {
-            $curTitle = preg_replace('/(.*)[\|\-] .*/i', '$1', $origTitle);
-            if (count(explode(' ', $curTitle)) < 3) {
-                $curTitle = preg_replace('/[^\|\-]*[\|\-](.*)/i', '$1', $origTitle);
-            }
-        } elseif (strpos($curTitle, ': ') !== false) {
-            $curTitle = preg_replace('/.*:(.*)/i', '$1', $origTitle);
-            if (count(explode(' ', $curTitle)) < 3) {
-                $curTitle = preg_replace('/[^:]*[:](.*)/i', '$1', $origTitle);
-            }
-        } elseif (mb_strlen($curTitle) > 150 || mb_strlen($curTitle) < 15) {
-            $hOnes = $this->dom->getElementsByTagName('h1');
-            if ($hOnes->length === 1) {
-                $curTitle = $this->getInnerText($hOnes->item(0));
-            }
-        }
-
-        $curTitle = trim($curTitle);
-        if (count(explode(' ', $curTitle)) <= 4) {
-            $curTitle = $origTitle;
-        }
-
-        $articleTitle = $this->dom->createElement('h1');
-        $articleTitle->innerHTML = $curTitle;
-
-        return $articleTitle;
-    }
-
-    /**
-     * Prepare the HTML document for readability to scrape it.
-     * This includes things like stripping javascript, CSS, and handling terrible markup.
-     */
-    protected function prepDocument()
-    {
-        /*
-         * In some cases a body element can't be found (if the HTML is totally hosed for example)
-         * so we create a new body node and append it to the document.
-         */
-        if ($this->body === null) {
-            $this->body = $this->dom->createElement('body');
-            $this->dom->documentElement->appendChild($this->body);
-        }
-
-        $this->body->setAttribute('class', 'readabilityBody');
-
-        // Remove all style tags in head.
-        $styleTags = $this->dom->getElementsByTagName('style');
-        for ($i = $styleTags->length - 1; $i >= 0; --$i) {
-            $styleTags->item($i)->parentNode->removeChild($styleTags->item($i));
-        }
-
-        $linkTags = $this->dom->getElementsByTagName('link');
-        for ($i = $linkTags->length - 1; $i >= 0; --$i) {
-            $linkTags->item($i)->parentNode->removeChild($linkTags->item($i));
         }
     }
 
@@ -506,7 +343,7 @@ class Readability implements LoggerAwareInterface
             }
 
             $linkText = $this->getInnerText($articleLink);
-            if ((strpos($articleLink->getAttribute('class'), 'readability-DoNotFootnote') !== false) || preg_match($this->regexps['skipFootnoteLink'], $linkText)) {
+            if ((false !== strpos($articleLink->getAttribute('class'), 'readability-DoNotFootnote')) || preg_match($this->regexps['skipFootnoteLink'], $linkText)) {
                 continue;
             }
 
@@ -527,7 +364,7 @@ class Readability implements LoggerAwareInterface
             $articleLink->setAttribute('style', 'color: inherit; text-decoration: none;');
             $articleLink->setAttribute('name', 'readabilityLink-' . $linkCount);
             $footnote->innerHTML = '<small><sup><a href="#readabilityLink-' . $linkCount . '" title="Jump to Link in Article">^</a></sup></small> ';
-            $footnoteLink->innerHTML = ($footnoteLink->getAttribute('title') !== '' ? $footnoteLink->getAttribute('title') : $linkText);
+            $footnoteLink->innerHTML = ('' !== $footnoteLink->getAttribute('title') ? $footnoteLink->getAttribute('title') : $linkText);
             $footnoteLink->setAttribute('name', 'readabilityFootnoteLink-' . $linkCount);
             $footnote->appendChild($footnoteLink);
 
@@ -589,7 +426,7 @@ class Readability implements LoggerAwareInterface
          *  already have a header.
          */
         $h2s = $articleContent->getElementsByTagName('h2');
-        if ($h2s->length === 1 && mb_strlen($this->getInnerText($h2s->item(0), true, true)) < 100) {
+        if (1 === $h2s->length && mb_strlen($this->getInnerText($h2s->item(0), true, true)) < 100) {
             $this->clean($articleContent, 'h2');
         }
 
@@ -614,7 +451,7 @@ class Readability implements LoggerAwareInterface
             $audioCount = $item->getElementsByTagName('audio')->length;
             $iframeCount = $item->getElementsByTagName('iframe')->length;
 
-            if ($iframeCount === 0 && $imgCount === 0 && $embedCount === 0 && $objectCount === 0 && $videoCount === 0 && $audioCount === 0 && mb_strlen(preg_replace('/\s+/is', '', $this->getInnerText($item, false, false))) === 0) {
+            if (0 === $iframeCount && 0 === $imgCount && 0 === $embedCount && 0 === $objectCount && 0 === $videoCount && 0 === $audioCount && 0 === mb_strlen(preg_replace('/\s+/is', '', $this->getInnerText($item, false, false)))) {
                 $item->parentNode->removeChild($item);
             }
 
@@ -640,435 +477,6 @@ class Readability implements LoggerAwareInterface
     }
 
     /**
-     * Initialize a node with the readability object. Also checks the
-     * className/id for special names to add to its score.
-     *
-     * @param \DOMElement $node
-     */
-    protected function initializeNode($node)
-    {
-        if (!isset($node->tagName)) {
-            return;
-        }
-
-        $readability = $this->dom->createAttribute('readability');
-        // this is our contentScore
-        $readability->value = 0;
-        $node->setAttributeNode($readability);
-
-        // using strtoupper just in case
-        switch (strtoupper($node->tagName)) {
-            case 'ARTICLE':
-                $readability->value += 15;
-            case 'DIV':
-                $readability->value += 5;
-                break;
-            case 'PRE':
-            case 'CODE':
-            case 'TD':
-            case 'BLOCKQUOTE':
-            case 'FIGURE':
-                $readability->value += 3;
-                break;
-            case 'SECTION':
-                // often misused
-                // $readability->value += 2;
-                break;
-            case 'OL':
-            case 'UL':
-            case 'DL':
-            case 'DD':
-            case 'DT':
-            case 'LI':
-                $readability->value -= 2 * round($this->getLinkDensity($node), 0, PHP_ROUND_HALF_UP);
-                break;
-            case 'ASIDE':
-            case 'FOOTER':
-            case 'HEADER':
-            case 'ADDRESS':
-            case 'FORM':
-            case 'BUTTON':
-            case 'TEXTAREA':
-            case 'INPUT':
-            case 'NAV':
-                $readability->value -= 3;
-                break;
-            case 'H1':
-            case 'H2':
-            case 'H3':
-            case 'H4':
-            case 'H5':
-            case 'H6':
-            case 'TH':
-            case 'HGROUP':
-                $readability->value -= 5;
-                break;
-        }
-
-        $readability->value += $this->getWeight($node);
-    }
-
-    /**
-     * Using a variety of metrics (content score, classname, element types), find the content that is
-     * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
-     *
-     * @param \DOMElement $page
-     *
-     * @return \DOMElement|bool
-     */
-    protected function grabArticle($page = null)
-    {
-        if (!$page) {
-            $page = $this->dom;
-        }
-
-        $xpath = null;
-        $nodesToScore = array();
-
-        if ($page instanceof \DOMDocument && isset($page->documentElement)) {
-            $xpath = new \DOMXPath($page);
-        }
-
-        $allElements = $page->getElementsByTagName('*');
-
-        for ($nodeIndex = 0; ($node = $allElements->item($nodeIndex)); ++$nodeIndex) {
-            $tagName = $node->tagName;
-
-            // Some well known site uses sections as paragraphs.
-            if (strcasecmp($tagName, 'p') === 0 || strcasecmp($tagName, 'td') === 0 || strcasecmp($tagName, 'pre') === 0 || strcasecmp($tagName, 'section') === 0) {
-                $nodesToScore[] = $node;
-            }
-
-            // Turn divs into P tags where they have been used inappropriately
-            //  (as in, where they contain no other block level elements).
-            if (strcasecmp($tagName, 'div') === 0 || strcasecmp($tagName, 'article') === 0 || strcasecmp($tagName, 'section') === 0) {
-                if (!preg_match($this->regexps['divToPElements'], $node->innerHTML)) {
-                    $newNode = $this->dom->createElement('p');
-
-                    try {
-                        $newNode->innerHTML = $node->innerHTML;
-
-                        $node->parentNode->replaceChild($newNode, $node);
-                        --$nodeIndex;
-                        $nodesToScore[] = $newNode;
-                    } catch (\Exception $e) {
-                        $this->logger->error('Could not alter div/article to p, reverting back to div: ' . $e->getMessage());
-                    }
-                } else {
-                    // Will change these P elements back to text nodes after processing.
-                    for ($i = 0, $il = $node->childNodes->length; $i < $il; ++$i) {
-                        $childNode = $node->childNodes->item($i);
-
-                        // it looks like sometimes the loop is going too far and we are retrieving a non-existant child
-                        if (null === $childNode) {
-                            continue;
-                        }
-
-                        // executable tags (<?php or <?xml) warning
-                        if (is_object($childNode) && get_class($childNode) === 'DOMProcessingInstruction') {
-                            $childNode->parentNode->removeChild($childNode);
-
-                            continue;
-                        }
-
-                        if ($childNode->nodeType === XML_TEXT_NODE) {
-                            $p = $this->dom->createElement('p');
-                            $p->innerHTML = $childNode->nodeValue;
-                            $p->setAttribute('data-readability-styled', 'true');
-                            $childNode->parentNode->replaceChild($p, $childNode);
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
-         * Loop through all paragraphs, and assign a score to them based on how content-y they look.
-         * Then add their score to their parent node.
-         *
-         * A score is determined by things like number of commas, class names, etc.
-         * Maybe eventually link density.
-         */
-        for ($pt = 0, $scored = count($nodesToScore); $pt < $scored; ++$pt) {
-            $parentNode = $nodesToScore[$pt]->parentNode;
-
-            // No parent node? Move on...
-            if (!$parentNode) {
-                continue;
-            }
-
-            $grandParentNode = $parentNode->parentNode instanceof \DOMElement ? $parentNode->parentNode : null;
-            $innerText = $this->getInnerText($nodesToScore[$pt]);
-
-            // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
-            if (mb_strlen($innerText) < self::MIN_PARAGRAPH_LENGTH) {
-                continue;
-            }
-
-            // Initialize readability data for the parent.
-            if (!$parentNode->hasAttribute('readability')) {
-                $this->initializeNode($parentNode);
-                $parentNode->setAttribute('data-candidate', 'true');
-            }
-
-            // Initialize readability data for the grandparent.
-            if ($grandParentNode && !$grandParentNode->hasAttribute('readability') && isset($grandParentNode->tagName)) {
-                $this->initializeNode($grandParentNode);
-                $grandParentNode->setAttribute('data-candidate', 'true');
-            }
-            // Add a point for the paragraph itself as a base.
-            $contentScore = 1;
-            // Add points for any commas within this paragraph.
-            $contentScore += $this->getCommaCount($innerText);
-            // For every SCORE_CHARS_IN_PARAGRAPH (default:100) characters in this paragraph, add another point. Up to 3 points.
-            $contentScore += min(floor(mb_strlen($innerText) / self::SCORE_CHARS_IN_PARAGRAPH), 3);
-            // For every SCORE_WORDS_IN_PARAGRAPH (default:20) words in this paragraph, add another point. Up to 3 points.
-            $contentScore += min(floor($this->getWordCount($innerText) / self::SCORE_WORDS_IN_PARAGRAPH), 3);
-            /* TEST: For every positive/negative parent tag, add/substract half point. Up to 3 points. *\/
-            $up = $nodesToScore[$pt];
-            $score = 0;
-            while ($up->parentNode instanceof \DOMElement) {
-                $up = $up->parentNode;
-                if (preg_match($this->regexps['positive'], $up->getAttribute('class') . ' ' . $up->getAttribute('id'))) {
-                    $score += 0.5;
-                } elseif (preg_match($this->regexps['negative'], $up->getAttribute('class') . ' ' . $up->getAttribute('id'))) {
-                    $score -= 0.5;
-                }
-            }
-            $score = floor($score);
-            $contentScore += max(min($score, 3), -3);/**/
-
-            // Add the score to the parent. The grandparent gets half.
-            $parentNode->getAttributeNode('readability')->value += $contentScore;
-            if ($grandParentNode) {
-                $grandParentNode->getAttributeNode('readability')->value += $contentScore / self::GRANDPARENT_SCORE_DIVISOR;
-            }
-        }
-
-        /*
-         * Node prepping: trash nodes that look cruddy (like ones with the class name "comment", etc).
-         * This is faster to do before scoring but safer after.
-         */
-        if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
-            $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
-            $node = null;
-
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
-                // node should be readable but not inside of an article otherwise it's probably non-readable block
-                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? strcasecmp($node->parentNode->tagName, 'article') !== 0 : true)) {
-                    $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
-                    $node->parentNode->removeChild($node);
-                }
-            }
-
-            $candidates = $xpath->query('.//*[not(self::body) and (@class or @id or @style) and ((number(@readability) < 40) or not(@readability))]', $page->documentElement);
-            $node = null;
-
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
-
-                // Remove unlikely candidates
-                $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
-
-                if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
-                    preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
-                    !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
-                ) {
-                    $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
-                    $node->parentNode->removeChild($node);
-                    --$nodeIndex;
-                }
-            }
-            unset($candidates);
-        }
-
-        /*
-         * After we've calculated scores, loop through all of the possible candidate nodes we found
-         * and find the one with the highest score.
-         */
-        $topCandidate = null;
-        if ($xpath) {
-            // Using array of DOMElements after deletion is a path to DOOMElement.
-            $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
-
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $item = $candidates->item($c);
-
-                // Scale the final candidates score based on link density. Good content should have a
-                // relatively small link density (5% or less) and be mostly unaffected by this operation.
-                // If not for this we would have used XPath to find maximum @readability.
-                $readability = $item->getAttributeNode('readability');
-                $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, PHP_ROUND_HALF_UP);
-
-                if (!$topCandidate || $readability->value > (int) $topCandidate->getAttribute('readability')) {
-                    $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
-                    $topCandidate = $item;
-                }
-            }
-
-            unset($candidates);
-        }
-
-        /*
-         * If we still have no top candidate, just use the body as a last resort.
-         * We also have to copy the body node so it is something we can modify.
-         */
-        if ($topCandidate === null || strcasecmp($topCandidate->tagName, 'body') === 0) {
-            $topCandidate = $this->dom->createElement('div');
-
-            if ($page instanceof \DOMDocument) {
-                if (!isset($page->documentElement)) {
-                    // we don't have a body either? what a mess! :)
-                    $this->logger->debug('The page has no body!');
-                } else {
-                    $this->logger->debug('Setting body to a raw HTML of original page!');
-                    $topCandidate->innerHTML = $page->documentElement->innerHTML;
-                    $page->documentElement->innerHTML = '';
-                    $this->reinitBody();
-                    $page->documentElement->appendChild($topCandidate);
-                }
-            } else {
-                $topCandidate->innerHTML = $page->innerHTML;
-                $page->innerHTML = '';
-                $page->appendChild($topCandidate);
-            }
-
-            $this->initializeNode($topCandidate);
-        }
-
-        // Set table as the main node if resulted data is table element.
-        $tagName = $topCandidate->tagName;
-        if (strcasecmp($tagName, 'td') === 0 || strcasecmp($tagName, 'tr') === 0) {
-            $up = $topCandidate;
-
-            if ($up->parentNode instanceof \DOMElement) {
-                $up = $up->parentNode;
-
-                if (strcasecmp($up->tagName, 'table') === 0) {
-                    $topCandidate = $up;
-                }
-            }
-        }
-
-        $this->logger->debug('Top candidate: ' . $topCandidate->getNodePath());
-
-        /*
-         * Now that we have the top candidate, look through its siblings for content that might also be related.
-         * Things like preambles, content split by ads that we removed, etc.
-         */
-        $articleContent = $this->dom->createElement('div');
-        $articleContent->setAttribute('class', 'readability-content');
-        $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
-        $siblingNodes = $topCandidate->parentNode->childNodes;
-
-        if (!isset($siblingNodes)) {
-            $siblingNodes = new stdClass();
-            $siblingNodes->length = 0;
-        }
-
-        for ($s = 0, $sl = $siblingNodes->length; $s < $sl; ++$s) {
-            $siblingNode = $siblingNodes->item($s);
-            $siblingNodeName = $siblingNode->nodeName;
-            $append = false;
-            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . (($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
-
-            if ($siblingNode->isSameNode($topCandidate)) {
-                $append = true;
-            }
-
-            $contentBonus = 0;
-
-            // Give a bonus if sibling nodes and top candidates have the same classname.
-            if ($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && $topCandidate->getAttribute('class') !== '') {
-                $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
-            }
-
-            if ($siblingNode->nodeType === XML_ELEMENT_NODE && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
-                $append = true;
-            }
-
-            if (strcasecmp($siblingNodeName, 'p') === 0) {
-                $linkDensity = $this->getLinkDensity($siblingNode);
-                $nodeContent = $this->getInnerText($siblingNode, true, true);
-                $nodeLength = mb_strlen($nodeContent);
-
-                if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
-                    || ($nodeLength < self::MIN_NODE_LENGTH && $linkDensity === 0 && preg_match('/\.( |$)/', $nodeContent))) {
-                    $append = true;
-                }
-            }
-
-            if ($append) {
-                $this->logger->debug('Appending node: ' . $siblingNode->getNodePath());
-
-                if (strcasecmp($siblingNodeName, 'div') !== 0 && strcasecmp($siblingNodeName, 'p') !== 0) {
-                    // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
-                    $this->logger->debug('Altering siblingNode "' . $siblingNodeName . '" to "div".');
-                    $nodeToAppend = $this->dom->createElement('div');
-
-                    try {
-                        $nodeToAppend->setAttribute('alt', $siblingNodeName);
-                        $nodeToAppend->innerHTML = $siblingNode->innerHTML;
-                    } catch (\Exception $e) {
-                        $this->logger->debug('Could not alter siblingNode "' . $siblingNodeName . '" to "div", reverting to original.');
-                        $nodeToAppend = $siblingNode;
-                        --$s;
-                        --$sl;
-                    }
-                } else {
-                    $nodeToAppend = $siblingNode;
-                    --$s;
-                    --$sl;
-                }
-
-                // To ensure a node does not interfere with readability styles, remove its classnames & ids.
-                // Now done via RegExp post_filter.
-                //$nodeToAppend->removeAttribute('class');
-                //$nodeToAppend->removeAttribute('id');
-                // Append sibling and subtract from our list as appending removes a node.
-                $articleContent->appendChild($nodeToAppend);
-            }
-        }
-
-        unset($xpath);
-
-        // So we have all of the content that we need. Now we clean it up for presentation.
-        $this->prepArticle($articleContent);
-
-        /*
-         * Now that we've gone through the full algorithm, check to see if we got any meaningful content.
-         * If we didn't, we may need to re-run grabArticle with different flags set. This gives us a higher
-         * likelihood of finding the content, and the sieve approach gives us a higher likelihood of
-         * finding the -right- content.
-         */
-        if (mb_strlen($this->getInnerText($articleContent, false)) < self::MIN_ARTICLE_LENGTH) {
-            $this->reinitBody();
-
-            if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS)) {
-                $this->removeFlag(self::FLAG_STRIP_UNLIKELYS);
-                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to strip unlikely content.\n");
-
-                return $this->grabArticle($this->body);
-            } elseif ($this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
-                $this->removeFlag(self::FLAG_WEIGHT_ATTRIBUTES);
-                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to weight attributes.\n");
-
-                return $this->grabArticle($this->body);
-            } elseif ($this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
-                $this->removeFlag(self::FLAG_CLEAN_CONDITIONALLY);
-                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to clean at all.\n");
-
-                return $this->grabArticle($this->body);
-            }
-
-            return false;
-        }
-
-        return $articleContent;
-    }
-
-    /**
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
      *
@@ -1080,7 +488,7 @@ class Readability implements LoggerAwareInterface
      */
     public function getInnerText($e, $normalizeSpaces = true, $flattenLines = false)
     {
-        if (null === $e || !isset($e->textContent) || $e->textContent === '') {
+        if (null === $e || !isset($e->textContent) || '' === $e->textContent) {
             return '';
         }
 
@@ -1102,7 +510,7 @@ class Readability implements LoggerAwareInterface
      */
     public function cleanStyles($e)
     {
-        if (!is_object($e)) {
+        if (!\is_object($e)) {
             return;
         }
 
@@ -1169,43 +577,6 @@ class Readability implements LoggerAwareInterface
     }
 
     /**
-     * Get an element weight by attribute.
-     * Uses regular expressions to tell if this element looks good or bad.
-     *
-     * @param \DOMElement $element
-     * @param string      $attribute
-     *
-     * @return int
-     */
-    protected function weightAttribute($element, $attribute)
-    {
-        if (!$element->hasAttribute($attribute)) {
-            return 0;
-        }
-        $weight = 0;
-
-        // $attributeValue = trim($element->getAttribute('class')." ".$element->getAttribute('id'));
-        $attributeValue = trim($element->getAttribute($attribute));
-
-        if ($attributeValue !== '') {
-            if (preg_match($this->regexps['negative'], $attributeValue)) {
-                $weight -= 25;
-            }
-            if (preg_match($this->regexps['positive'], $attributeValue)) {
-                $weight += 25;
-            }
-            if (preg_match($this->regexps['unlikelyCandidates'], $attributeValue)) {
-                $weight -= 5;
-            }
-            if (preg_match($this->regexps['okMaybeItsACandidate'], $attributeValue)) {
-                $weight += 5;
-            }
-        }
-
-        return $weight;
-    }
-
-    /**
      * Get an element relative weight.
      *
      * @param \DOMElement $e
@@ -1252,7 +623,7 @@ class Readability implements LoggerAwareInterface
     {
         $currentItem = null;
         $targetList = $e->getElementsByTagName($tag);
-        $isEmbed = ($tag === 'audio' || $tag === 'video' || $tag === 'iframe' || $tag === 'object' || $tag === 'embed');
+        $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
 
         for ($y = $targetList->length - 1; $y >= 0; --$y) {
             // Allow youtube and vimeo videos through as people usually want to see those.
@@ -1340,13 +711,13 @@ class Readability implements LoggerAwareInterface
                 $toRemove = false;
 
                 if ($this->lightClean) {
-                    if ($li > $p && $tag !== 'ul' && $tag !== 'ol') {
+                    if ($li > $p && 'ul' !== $tag && 'ol' !== $tag) {
                         $this->logger->debug(' too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
                         $this->logger->debug(' too many <input> elements');
                         $toRemove = true;
-                    } elseif ($contentLength < 6 && ($embedCount === 0 && ($img === 0 || $img > 2))) {
+                    } elseif ($contentLength < 6 && (0 === $embedCount && (0 === $img || $img > 2))) {
                         $this->logger->debug(' content length less than 6 chars, 0 embeds and either 0 images or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.25) {
@@ -1363,13 +734,13 @@ class Readability implements LoggerAwareInterface
                     if ($img > $p) {
                         $this->logger->debug(' more image elements than paragraph elements');
                         $toRemove = true;
-                    } elseif ($li > $p && $tag !== 'ul' && $tag !== 'ol') {
+                    } elseif ($li > $p && 'ul' !== $tag && 'ol' !== $tag) {
                         $this->logger->debug('  too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
                         $this->logger->debug('  too many <input> elements');
                         $toRemove = true;
-                    } elseif ($contentLength < 10 && ($img === 0 || $img > 2)) {
+                    } elseif ($contentLength < 10 && (0 === $img || $img > 2)) {
                         $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
                         $toRemove = true;
                     } elseif ($weight < 25 && $linkDensity > 0.2) {
@@ -1378,7 +749,7 @@ class Readability implements LoggerAwareInterface
                     } elseif ($weight >= 25 && $linkDensity > 0.5) {
                         $this->logger->debug('  weight above 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
                         $toRemove = true;
-                    } elseif (($embedCount === 1 && $contentLength < 75) || $embedCount > 1) {
+                    } elseif ((1 === $embedCount && $contentLength < 75) || $embedCount > 1) {
                         $this->logger->debug('  1 embed and content length smaller than 75 chars, or more than one embed');
                         $toRemove = true;
                     }
@@ -1443,6 +814,565 @@ class Readability implements LoggerAwareInterface
     }
 
     /**
+     * Debug.
+     *
+     * @deprecated use $this->logger->debug() instead
+     * @codeCoverageIgnore
+     */
+    protected function dbg($msg)
+    {
+        $this->logger->debug($msg);
+    }
+
+    /**
+     * Dump debug info.
+     *
+     * @deprecated since Monolog gather log, we don't need it
+     * @codeCoverageIgnore
+     */
+    protected function dump_dbg()
+    {
+    }
+
+    /**
+     * Get the article title as an H1.
+     *
+     * @return \DOMElement
+     */
+    protected function getArticleTitle()
+    {
+        try {
+            $curTitle = $origTitle = $this->getInnerText($this->dom->getElementsByTagName('title')->item(0));
+        } catch (\Exception $e) {
+            $curTitle = '';
+            $origTitle = '';
+        }
+
+        if (preg_match('/ [\|\-] /', $curTitle)) {
+            $curTitle = preg_replace('/(.*)[\|\-] .*/i', '$1', $origTitle);
+            if (\count(explode(' ', $curTitle)) < 3) {
+                $curTitle = preg_replace('/[^\|\-]*[\|\-](.*)/i', '$1', $origTitle);
+            }
+        } elseif (false !== strpos($curTitle, ': ')) {
+            $curTitle = preg_replace('/.*:(.*)/i', '$1', $origTitle);
+            if (\count(explode(' ', $curTitle)) < 3) {
+                $curTitle = preg_replace('/[^:]*[:](.*)/i', '$1', $origTitle);
+            }
+        } elseif (mb_strlen($curTitle) > 150 || mb_strlen($curTitle) < 15) {
+            $hOnes = $this->dom->getElementsByTagName('h1');
+            if (1 === $hOnes->length) {
+                $curTitle = $this->getInnerText($hOnes->item(0));
+            }
+        }
+
+        $curTitle = trim($curTitle);
+        if (\count(explode(' ', $curTitle)) <= 4) {
+            $curTitle = $origTitle;
+        }
+
+        $articleTitle = $this->dom->createElement('h1');
+        $articleTitle->innerHTML = $curTitle;
+
+        return $articleTitle;
+    }
+
+    /**
+     * Prepare the HTML document for readability to scrape it.
+     * This includes things like stripping javascript, CSS, and handling terrible markup.
+     */
+    protected function prepDocument()
+    {
+        /*
+         * In some cases a body element can't be found (if the HTML is totally hosed for example)
+         * so we create a new body node and append it to the document.
+         */
+        if (null === $this->body) {
+            $this->body = $this->dom->createElement('body');
+            $this->dom->documentElement->appendChild($this->body);
+        }
+
+        $this->body->setAttribute('class', 'readabilityBody');
+
+        // Remove all style tags in head.
+        $styleTags = $this->dom->getElementsByTagName('style');
+        for ($i = $styleTags->length - 1; $i >= 0; --$i) {
+            $styleTags->item($i)->parentNode->removeChild($styleTags->item($i));
+        }
+
+        $linkTags = $this->dom->getElementsByTagName('link');
+        for ($i = $linkTags->length - 1; $i >= 0; --$i) {
+            $linkTags->item($i)->parentNode->removeChild($linkTags->item($i));
+        }
+    }
+
+    /**
+     * Initialize a node with the readability object. Also checks the
+     * className/id for special names to add to its score.
+     *
+     * @param \DOMElement $node
+     */
+    protected function initializeNode($node)
+    {
+        if (!isset($node->tagName)) {
+            return;
+        }
+
+        $readability = $this->dom->createAttribute('readability');
+        // this is our contentScore
+        $readability->value = 0;
+        $node->setAttributeNode($readability);
+
+        // using strtoupper just in case
+        switch (strtoupper($node->tagName)) {
+            case 'ARTICLE':
+                $readability->value += 15;
+                // no break
+            case 'DIV':
+                $readability->value += 5;
+                break;
+            case 'PRE':
+            case 'CODE':
+            case 'TD':
+            case 'BLOCKQUOTE':
+            case 'FIGURE':
+                $readability->value += 3;
+                break;
+            case 'SECTION':
+                // often misused
+                // $readability->value += 2;
+                break;
+            case 'OL':
+            case 'UL':
+            case 'DL':
+            case 'DD':
+            case 'DT':
+            case 'LI':
+                $readability->value -= 2 * round($this->getLinkDensity($node), 0, PHP_ROUND_HALF_UP);
+                break;
+            case 'ASIDE':
+            case 'FOOTER':
+            case 'HEADER':
+            case 'ADDRESS':
+            case 'FORM':
+            case 'BUTTON':
+            case 'TEXTAREA':
+            case 'INPUT':
+            case 'NAV':
+                $readability->value -= 3;
+                break;
+            case 'H1':
+            case 'H2':
+            case 'H3':
+            case 'H4':
+            case 'H5':
+            case 'H6':
+            case 'TH':
+            case 'HGROUP':
+                $readability->value -= 5;
+                break;
+        }
+
+        $readability->value += $this->getWeight($node);
+    }
+
+    /**
+     * Using a variety of metrics (content score, classname, element types), find the content that is
+     * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
+     *
+     * @param \DOMElement $page
+     *
+     * @return \DOMElement|bool
+     */
+    protected function grabArticle($page = null)
+    {
+        if (!$page) {
+            $page = $this->dom;
+        }
+
+        $xpath = null;
+        $nodesToScore = [];
+
+        if ($page instanceof \DOMDocument && isset($page->documentElement)) {
+            $xpath = new \DOMXPath($page);
+        }
+
+        $allElements = $page->getElementsByTagName('*');
+
+        for ($nodeIndex = 0; ($node = $allElements->item($nodeIndex)); ++$nodeIndex) {
+            $tagName = $node->tagName;
+
+            // Some well known site uses sections as paragraphs.
+            if (0 === strcasecmp($tagName, 'p') || 0 === strcasecmp($tagName, 'td') || 0 === strcasecmp($tagName, 'pre') || 0 === strcasecmp($tagName, 'section')) {
+                $nodesToScore[] = $node;
+            }
+
+            // Turn divs into P tags where they have been used inappropriately
+            //  (as in, where they contain no other block level elements).
+            if (0 === strcasecmp($tagName, 'div') || 0 === strcasecmp($tagName, 'article') || 0 === strcasecmp($tagName, 'section')) {
+                if (!preg_match($this->regexps['divToPElements'], $node->innerHTML)) {
+                    $newNode = $this->dom->createElement('p');
+
+                    try {
+                        $newNode->innerHTML = $node->innerHTML;
+
+                        $node->parentNode->replaceChild($newNode, $node);
+                        --$nodeIndex;
+                        $nodesToScore[] = $newNode;
+                    } catch (\Exception $e) {
+                        $this->logger->error('Could not alter div/article to p, reverting back to div: ' . $e->getMessage());
+                    }
+                } else {
+                    // Will change these P elements back to text nodes after processing.
+                    for ($i = 0, $il = $node->childNodes->length; $i < $il; ++$i) {
+                        $childNode = $node->childNodes->item($i);
+
+                        // it looks like sometimes the loop is going too far and we are retrieving a non-existant child
+                        if (null === $childNode) {
+                            continue;
+                        }
+
+                        // executable tags (<?php or <?xml) warning
+                        if (\is_object($childNode) && 'DOMProcessingInstruction' === \get_class($childNode)) {
+                            $childNode->parentNode->removeChild($childNode);
+
+                            continue;
+                        }
+
+                        if (XML_TEXT_NODE === $childNode->nodeType) {
+                            $p = $this->dom->createElement('p');
+                            $p->innerHTML = $childNode->nodeValue;
+                            $p->setAttribute('data-readability-styled', 'true');
+                            $childNode->parentNode->replaceChild($p, $childNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+         * Loop through all paragraphs, and assign a score to them based on how content-y they look.
+         * Then add their score to their parent node.
+         *
+         * A score is determined by things like number of commas, class names, etc.
+         * Maybe eventually link density.
+         */
+        for ($pt = 0, $scored = \count($nodesToScore); $pt < $scored; ++$pt) {
+            $parentNode = $nodesToScore[$pt]->parentNode;
+
+            // No parent node? Move on...
+            if (!$parentNode) {
+                continue;
+            }
+
+            $grandParentNode = $parentNode->parentNode instanceof \DOMElement ? $parentNode->parentNode : null;
+            $innerText = $this->getInnerText($nodesToScore[$pt]);
+
+            // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
+            if (mb_strlen($innerText) < self::MIN_PARAGRAPH_LENGTH) {
+                continue;
+            }
+
+            // Initialize readability data for the parent.
+            if (!$parentNode->hasAttribute('readability')) {
+                $this->initializeNode($parentNode);
+                $parentNode->setAttribute('data-candidate', 'true');
+            }
+
+            // Initialize readability data for the grandparent.
+            if ($grandParentNode && !$grandParentNode->hasAttribute('readability') && isset($grandParentNode->tagName)) {
+                $this->initializeNode($grandParentNode);
+                $grandParentNode->setAttribute('data-candidate', 'true');
+            }
+            // Add a point for the paragraph itself as a base.
+            $contentScore = 1;
+            // Add points for any commas within this paragraph.
+            $contentScore += $this->getCommaCount($innerText);
+            // For every SCORE_CHARS_IN_PARAGRAPH (default:100) characters in this paragraph, add another point. Up to 3 points.
+            $contentScore += min(floor(mb_strlen($innerText) / self::SCORE_CHARS_IN_PARAGRAPH), 3);
+            // For every SCORE_WORDS_IN_PARAGRAPH (default:20) words in this paragraph, add another point. Up to 3 points.
+            $contentScore += min(floor($this->getWordCount($innerText) / self::SCORE_WORDS_IN_PARAGRAPH), 3);
+            /* TEST: For every positive/negative parent tag, add/substract half point. Up to 3 points. *\/
+            $up = $nodesToScore[$pt];
+            $score = 0;
+            while ($up->parentNode instanceof \DOMElement) {
+                $up = $up->parentNode;
+                if (preg_match($this->regexps['positive'], $up->getAttribute('class') . ' ' . $up->getAttribute('id'))) {
+                    $score += 0.5;
+                } elseif (preg_match($this->regexps['negative'], $up->getAttribute('class') . ' ' . $up->getAttribute('id'))) {
+                    $score -= 0.5;
+                }
+            }
+            $score = floor($score);
+            $contentScore += max(min($score, 3), -3);/**/
+
+            // Add the score to the parent. The grandparent gets half.
+            $parentNode->getAttributeNode('readability')->value += $contentScore;
+            if ($grandParentNode) {
+                $grandParentNode->getAttributeNode('readability')->value += $contentScore / self::GRANDPARENT_SCORE_DIVISOR;
+            }
+        }
+
+        /*
+         * Node prepping: trash nodes that look cruddy (like ones with the class name "comment", etc).
+         * This is faster to do before scoring but safer after.
+         */
+        if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
+            $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
+            $node = null;
+
+            for ($c = $candidates->length - 1; $c >= 0; --$c) {
+                $node = $candidates->item($c);
+                // node should be readable but not inside of an article otherwise it's probably non-readable block
+                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
+                    $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $node->parentNode->removeChild($node);
+                }
+            }
+
+            $candidates = $xpath->query('.//*[not(self::body) and (@class or @id or @style) and ((number(@readability) < 40) or not(@readability))]', $page->documentElement);
+            $node = null;
+
+            for ($c = $candidates->length - 1; $c >= 0; --$c) {
+                $node = $candidates->item($c);
+
+                // Remove unlikely candidates
+                $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
+
+                if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
+                    preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
+                    !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
+                ) {
+                    $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $node->parentNode->removeChild($node);
+                    --$nodeIndex;
+                }
+            }
+            unset($candidates);
+        }
+
+        /*
+         * After we've calculated scores, loop through all of the possible candidate nodes we found
+         * and find the one with the highest score.
+         */
+        $topCandidate = null;
+        if ($xpath) {
+            // Using array of DOMElements after deletion is a path to DOOMElement.
+            $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
+
+            for ($c = $candidates->length - 1; $c >= 0; --$c) {
+                $item = $candidates->item($c);
+
+                // Scale the final candidates score based on link density. Good content should have a
+                // relatively small link density (5% or less) and be mostly unaffected by this operation.
+                // If not for this we would have used XPath to find maximum @readability.
+                $readability = $item->getAttributeNode('readability');
+                $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, PHP_ROUND_HALF_UP);
+
+                if (!$topCandidate || $readability->value > (int) $topCandidate->getAttribute('readability')) {
+                    $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
+                    $topCandidate = $item;
+                }
+            }
+
+            unset($candidates);
+        }
+
+        /*
+         * If we still have no top candidate, just use the body as a last resort.
+         * We also have to copy the body node so it is something we can modify.
+         */
+        if (null === $topCandidate || 0 === strcasecmp($topCandidate->tagName, 'body')) {
+            $topCandidate = $this->dom->createElement('div');
+
+            if ($page instanceof \DOMDocument) {
+                if (!isset($page->documentElement)) {
+                    // we don't have a body either? what a mess! :)
+                    $this->logger->debug('The page has no body!');
+                } else {
+                    $this->logger->debug('Setting body to a raw HTML of original page!');
+                    $topCandidate->innerHTML = $page->documentElement->innerHTML;
+                    $page->documentElement->innerHTML = '';
+                    $this->reinitBody();
+                    $page->documentElement->appendChild($topCandidate);
+                }
+            } else {
+                $topCandidate->innerHTML = $page->innerHTML;
+                $page->innerHTML = '';
+                $page->appendChild($topCandidate);
+            }
+
+            $this->initializeNode($topCandidate);
+        }
+
+        // Set table as the main node if resulted data is table element.
+        $tagName = $topCandidate->tagName;
+        if (0 === strcasecmp($tagName, 'td') || 0 === strcasecmp($tagName, 'tr')) {
+            $up = $topCandidate;
+
+            if ($up->parentNode instanceof \DOMElement) {
+                $up = $up->parentNode;
+
+                if (0 === strcasecmp($up->tagName, 'table')) {
+                    $topCandidate = $up;
+                }
+            }
+        }
+
+        $this->logger->debug('Top candidate: ' . $topCandidate->getNodePath());
+
+        /*
+         * Now that we have the top candidate, look through its siblings for content that might also be related.
+         * Things like preambles, content split by ads that we removed, etc.
+         */
+        $articleContent = $this->dom->createElement('div');
+        $articleContent->setAttribute('class', 'readability-content');
+        $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
+        $siblingNodes = $topCandidate->parentNode->childNodes;
+
+        if (!isset($siblingNodes)) {
+            $siblingNodes = new stdClass();
+            $siblingNodes->length = 0;
+        }
+
+        for ($s = 0, $sl = $siblingNodes->length; $s < $sl; ++$s) {
+            $siblingNode = $siblingNodes->item($s);
+            $siblingNodeName = $siblingNode->nodeName;
+            $append = false;
+            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . ((XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
+
+            if ($siblingNode->isSameNode($topCandidate)) {
+                $append = true;
+            }
+
+            $contentBonus = 0;
+
+            // Give a bonus if sibling nodes and top candidates have the same classname.
+            if (XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
+                $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
+            }
+
+            if (XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
+                $append = true;
+            }
+
+            if (0 === strcasecmp($siblingNodeName, 'p')) {
+                $linkDensity = $this->getLinkDensity($siblingNode);
+                $nodeContent = $this->getInnerText($siblingNode, true, true);
+                $nodeLength = mb_strlen($nodeContent);
+
+                if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
+                    || ($nodeLength < self::MIN_NODE_LENGTH && 0 === $linkDensity && preg_match('/\.( |$)/', $nodeContent))) {
+                    $append = true;
+                }
+            }
+
+            if ($append) {
+                $this->logger->debug('Appending node: ' . $siblingNode->getNodePath());
+
+                if (0 !== strcasecmp($siblingNodeName, 'div') && 0 !== strcasecmp($siblingNodeName, 'p')) {
+                    // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
+                    $this->logger->debug('Altering siblingNode "' . $siblingNodeName . '" to "div".');
+                    $nodeToAppend = $this->dom->createElement('div');
+
+                    try {
+                        $nodeToAppend->setAttribute('alt', $siblingNodeName);
+                        $nodeToAppend->innerHTML = $siblingNode->innerHTML;
+                    } catch (\Exception $e) {
+                        $this->logger->debug('Could not alter siblingNode "' . $siblingNodeName . '" to "div", reverting to original.');
+                        $nodeToAppend = $siblingNode;
+                        --$s;
+                        --$sl;
+                    }
+                } else {
+                    $nodeToAppend = $siblingNode;
+                    --$s;
+                    --$sl;
+                }
+
+                // To ensure a node does not interfere with readability styles, remove its classnames & ids.
+                // Now done via RegExp post_filter.
+                //$nodeToAppend->removeAttribute('class');
+                //$nodeToAppend->removeAttribute('id');
+                // Append sibling and subtract from our list as appending removes a node.
+                $articleContent->appendChild($nodeToAppend);
+            }
+        }
+
+        unset($xpath);
+
+        // So we have all of the content that we need. Now we clean it up for presentation.
+        $this->prepArticle($articleContent);
+
+        /*
+         * Now that we've gone through the full algorithm, check to see if we got any meaningful content.
+         * If we didn't, we may need to re-run grabArticle with different flags set. This gives us a higher
+         * likelihood of finding the content, and the sieve approach gives us a higher likelihood of
+         * finding the -right- content.
+         */
+        if (mb_strlen($this->getInnerText($articleContent, false)) < self::MIN_ARTICLE_LENGTH) {
+            $this->reinitBody();
+
+            if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS)) {
+                $this->removeFlag(self::FLAG_STRIP_UNLIKELYS);
+                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to strip unlikely content.\n");
+
+                return $this->grabArticle($this->body);
+            } elseif ($this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
+                $this->removeFlag(self::FLAG_WEIGHT_ATTRIBUTES);
+                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to weight attributes.\n");
+
+                return $this->grabArticle($this->body);
+            } elseif ($this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
+                $this->removeFlag(self::FLAG_CLEAN_CONDITIONALLY);
+                $this->logger->debug('...content is shorter than ' . self::MIN_ARTICLE_LENGTH . " letters, trying not to clean at all.\n");
+
+                return $this->grabArticle($this->body);
+            }
+
+            return false;
+        }
+
+        return $articleContent;
+    }
+
+    /**
+     * Get an element weight by attribute.
+     * Uses regular expressions to tell if this element looks good or bad.
+     *
+     * @param \DOMElement $element
+     * @param string      $attribute
+     *
+     * @return int
+     */
+    protected function weightAttribute($element, $attribute)
+    {
+        if (!$element->hasAttribute($attribute)) {
+            return 0;
+        }
+        $weight = 0;
+
+        // $attributeValue = trim($element->getAttribute('class')." ".$element->getAttribute('id'));
+        $attributeValue = trim($element->getAttribute($attribute));
+
+        if ('' !== $attributeValue) {
+            if (preg_match($this->regexps['negative'], $attributeValue)) {
+                $weight -= 25;
+            }
+            if (preg_match($this->regexps['positive'], $attributeValue)) {
+                $weight += 25;
+            }
+            if (preg_match($this->regexps['unlikelyCandidates'], $attributeValue)) {
+                $weight -= 5;
+            }
+            if (preg_match($this->regexps['okMaybeItsACandidate'], $attributeValue)) {
+                $weight += 5;
+            }
+        }
+
+        return $weight;
+    }
+
+    /**
      * Will recreate previously deleted body property.
      */
     protected function reinitBody()
@@ -1451,5 +1381,75 @@ class Readability implements LoggerAwareInterface
             $this->body = $this->dom->createElement('body');
             $this->body->innerHTML = $this->bodyCache;
         }
+    }
+
+    /**
+     * Load HTML in a DOMDocument.
+     * Apply Pre filters
+     * Cleanup HTML using Tidy (or not).
+     *
+     * @todo This should be called in init() instead of from __construct
+     */
+    private function loadHtml()
+    {
+        $this->original_html = $this->html;
+
+        $this->logger->debug('Parsing URL: ' . $this->url);
+
+        if ($this->url) {
+            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, PHP_URL_HOST)), ['.' => '\.']) . '/';
+        }
+
+        mb_internal_encoding('UTF-8');
+        mb_http_output('UTF-8');
+        mb_regex_encoding('UTF-8');
+
+        // HACK: dirty cleanup to replace some stuff; shouldn't use regexps with HTML but well...
+        if (!$this->flagIsActive(self::FLAG_DISABLE_PREFILTER)) {
+            foreach ($this->pre_filters as $search => $replace) {
+                $this->html = preg_replace($search, $replace, $this->html);
+            }
+            unset($search, $replace);
+        }
+
+        if ('' === trim($this->html)) {
+            $this->html = '<html></html>';
+        }
+
+        /*
+         * Use tidy (if it exists).
+         * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
+         * Although sometimes it makes matters worse, which is why there is an option to disable it.
+         */
+        if ($this->useTidy) {
+            $this->logger->debug('Tidying document');
+
+            $tidy = tidy_repair_string($this->html, $this->tidy_config, 'UTF8');
+            if (false !== $tidy && $this->html !== $tidy) {
+                $this->tidied = true;
+                $this->html = $tidy;
+                $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
+            }
+            unset($tidy);
+        }
+
+        $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
+
+        if (!('html5lib' === $this->parser && ($this->dom = Parser::parse($this->html)))) {
+            libxml_use_internal_errors(true);
+
+            $this->dom = new \DOMDocument();
+            $this->dom->preserveWhiteSpace = false;
+
+            if (\PHP_VERSION_ID >= 50400) {
+                $this->dom->loadHTML($this->html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
+            } else {
+                $this->dom->loadHTML($this->html);
+            }
+
+            libxml_use_internal_errors(false);
+        }
+
+        $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
     }
 }

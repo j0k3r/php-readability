@@ -45,7 +45,7 @@ class JSLikeHTMLElement extends \DOMElement
      */
     public function __set($name, $value)
     {
-        if ($name !== 'innerHTML') {
+        if ('innerHTML' !== $name) {
             $trace = debug_backtrace();
             trigger_error('Undefined property via __set(): ' . $name . ' in ' . $trace[0]['file'] . ' on line ' . $trace[0]['line'], E_USER_NOTICE);
 
@@ -109,7 +109,7 @@ class JSLikeHTMLElement extends \DOMElement
      */
     public function __get($name)
     {
-        if ($name === 'innerHTML') {
+        if ('innerHTML' === $name) {
             $inner = '';
 
             foreach ($this->childNodes as $child) {
@@ -121,8 +121,6 @@ class JSLikeHTMLElement extends \DOMElement
 
         $trace = debug_backtrace();
         trigger_error('Undefined property via __get(): ' . $name . ' in ' . $trace[0]['file'] . ' on line ' . $trace[0]['line'], E_USER_NOTICE);
-
-        return;
     }
 
     public function __toString()
