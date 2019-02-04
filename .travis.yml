@@ -37,4 +37,4 @@ script:
     - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/php-cs-fixer fix --verbose --dry-run ; fi;
 
 after_script:
-    - php vendor/bin/coveralls -v
+    - php vendor/bin/php-coveralls -v -x build/logs/clover.xml
