@@ -274,10 +274,10 @@ class Readability implements LoggerAwareInterface
         if ($this->useTidy) {
             $this->logger->debug('Tidying document');
 
-            $tidy = tidy_parse_string($this->html, $this->tidy_config, 'UTF8');
-            if (tidy_clean_repair($tidy)) {
+            $tidy = tidy_repair_string($this->html, $this->tidy_config, 'UTF8');
+            if (false !== $tidy && $this->html !== $tidy) {
                 $this->tidied = true;
-                $this->html = $tidy->value;
+                $this->html = $tidy;
                 $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
             }
             unset($tidy);
