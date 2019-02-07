@@ -72,6 +72,9 @@ class Readability implements LoggerAwareInterface
     public $articleTitle;
     public $articleContent;
     public $original_html;
+    /**
+     * @var \DOMDocument
+     */
     public $dom;
     // optional - URL where HTML was retrieved
     public $url = null;
@@ -169,10 +172,10 @@ class Readability implements LoggerAwareInterface
     /**
      * Create instance of Readability.
      *
-     * @param string UTF-8 encoded string
-     * @param string (optional) URL associated with HTML (for footnotes)
-     * @param string (optional) Which parser to use for turning raw HTML into a DOMDocument
-     * @param bool (optional) Use tidy
+     * @param string $html     UTF-8 encoded string
+     * @param string $url      URL associated with HTML (for footnotes)
+     * @param string $parser   Which parser to use for turning raw HTML into a DOMDocument
+     * @param bool   $use_tidy Use tidy
      */
     public function __construct($html, $url = null, $parser = 'libxml', $use_tidy = true)
     {
@@ -213,8 +216,8 @@ class Readability implements LoggerAwareInterface
     /**
      * Add pre filter for raw input HTML processing.
      *
-     * @param string RegExp for replace
-     * @param string (optional) Replacer
+     * @param string $filter   RegExp for replace
+     * @param string $replacer Replacer
      */
     public function addPreFilter($filter, $replacer = '')
     {
@@ -224,8 +227,8 @@ class Readability implements LoggerAwareInterface
     /**
      * Add post filter for raw output HTML processing.
      *
-     * @param string RegExp for replace
-     * @param string (optional) Replacer
+     * @param string $filter   RegExp for replace
+     * @param string $replacer Replacer
      */
     public function addPostFilter($filter, $replacer = '')
     {
@@ -258,7 +261,7 @@ class Readability implements LoggerAwareInterface
         if (null === $this->bodyCache) {
             $this->bodyCache = '';
             foreach ($bodyElems as $bodyNode) {
-                $this->bodyCache .= trim($bodyNode->innerHTML);
+                $this->bodyCache .= trim($bodyNode->getInnerHTML());
             }
         }
 
@@ -278,7 +281,7 @@ class Readability implements LoggerAwareInterface
             $this->success = false;
             $articleContent = $this->dom->createElement('div');
             $articleContent->setAttribute('class', 'readability-content');
-            $articleContent->innerHTML = '<p>Sorry, Readability was unable to parse this page for content.</p>';
+            $articleContent->setInnerHtml('<p>Sorry, Readability was unable to parse this page for content.</p>');
         }
 
         $overlay->setAttribute('class', 'readOverlay');
@@ -290,7 +293,7 @@ class Readability implements LoggerAwareInterface
         $overlay->appendChild($innerDiv);
 
         // Clear the old HTML, insert the new content.
-        $this->body->innerHTML = '';
+        $this->body->setInnerHtml('');
         $this->body->appendChild($overlay);
         $this->body->removeAttribute('style');
         $this->postProcessContent($articleContent);
@@ -307,7 +310,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $articleContent
      */
-    public function postProcessContent($articleContent)
+    public function postProcessContent(\DOMElement $articleContent)
     {
         if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
@@ -321,11 +324,11 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $articleContent
      */
-    public function addFootnotes($articleContent)
+    public function addFootnotes(\DOMElement $articleContent)
     {
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
-        $footnotesWrapper->innerHTML = '<h3>References</h3>';
+        $footnotesWrapper->setInnerHtml('<h3>References</h3>');
         $articleFootnotes = $this->dom->createElement('ol');
         $articleFootnotes->setAttribute('class', 'readability-footnotes-list');
         $footnotesWrapper->appendChild($articleFootnotes);
@@ -351,7 +354,7 @@ class Readability implements LoggerAwareInterface
 
             // Add a superscript reference after the article link.
             $refLink->setAttribute('href', '#readabilityFootnoteLink-' . $linkCount);
-            $refLink->innerHTML = '<small><sup>[' . $linkCount . ']</sup></small>';
+            $refLink->setInnerHtml('<small><sup>[' . $linkCount . ']</sup></small>');
             $refLink->setAttribute('class', 'readability-DoNotFootnote');
             $refLink->setAttribute('style', 'color: inherit;');
 
@@ -363,13 +366,13 @@ class Readability implements LoggerAwareInterface
 
             $articleLink->setAttribute('style', 'color: inherit; text-decoration: none;');
             $articleLink->setAttribute('name', 'readabilityLink-' . $linkCount);
-            $footnote->innerHTML = '<small><sup><a href="#readabilityLink-' . $linkCount . '" title="Jump to Link in Article">^</a></sup></small> ';
-            $footnoteLink->innerHTML = ('' !== $footnoteLink->getAttribute('title') ? $footnoteLink->getAttribute('title') : $linkText);
+            $footnote->setInnerHtml('<small><sup><a href="#readabilityLink-' . $linkCount . '" title="Jump to Link in Article">^</a></sup></small> ');
+            $footnoteLink->setInnerHtml(('' !== $footnoteLink->getAttribute('title') ? $footnoteLink->getAttribute('title') : $linkText));
             $footnoteLink->setAttribute('name', 'readabilityFootnoteLink-' . $linkCount);
             $footnote->appendChild($footnoteLink);
 
             if ($linkDomain) {
-                $footnote->innerHTML = $footnote->innerHTML . '<small> (' . $linkDomain . ')</small>';
+                $footnote->setInnerHtml($footnote->getInnerHTML() . '<small> (' . $linkDomain . ')</small>');
             }
             $articleFootnotes->appendChild($footnote);
         }
@@ -383,10 +386,14 @@ class Readability implements LoggerAwareInterface
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
      *
-     * @param \DOMElement $articleContent
+     * @param \DOMNode $articleContent
      */
-    public function prepArticle($articleContent)
+    public function prepArticle(\DOMNode $articleContent)
     {
+        if (!$articleContent instanceof \DOMElement) {
+            return;
+        }
+
         $this->logger->debug($this->lightClean ? 'Light clean enabled.' : 'Standard clean enabled.');
 
         $this->cleanStyles($articleContent);
@@ -467,7 +474,7 @@ class Readability implements LoggerAwareInterface
         if (!$this->flagIsActive(self::FLAG_DISABLE_POSTFILTER)) {
             try {
                 foreach ($this->post_filters as $search => $replace) {
-                    $articleContent->innerHTML = preg_replace($search, $replace, $articleContent->innerHTML);
+                    $articleContent->setInnerHtml(preg_replace($search, $replace, $articleContent->getInnerHTML()));
                 }
                 unset($search, $replace);
             } catch (\Exception $e) {
@@ -552,11 +559,11 @@ class Readability implements LoggerAwareInterface
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
      *
      * @param \DOMElement $e
-     * @param string      $excludeExternal
+     * @param bool        $excludeExternal
      *
      * @return int
      */
-    public function getLinkDensity($e, $excludeExternal = false)
+    public function getLinkDensity(\DOMElement $e, $excludeExternal = false)
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
@@ -583,7 +590,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return int
      */
-    public function getWeight($e)
+    public function getWeight(\DOMElement $e)
     {
         if (!$this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
             return 0;
@@ -603,11 +610,11 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $node
      */
-    public function killBreaks($node)
+    public function killBreaks(\DOMElement $node)
     {
-        $html = $node->innerHTML;
+        $html = $node->getInnerHTML();
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
-        $node->innerHTML = $html;
+        $node->setInnerHtml($html);
     }
 
     /**
@@ -619,7 +626,7 @@ class Readability implements LoggerAwareInterface
      * @param \DOMElement $e
      * @param string      $tag
      */
-    public function clean($e, $tag)
+    public function clean(\DOMElement $e, $tag)
     {
         $currentItem = null;
         $targetList = $e->getElementsByTagName($tag);
@@ -638,7 +645,7 @@ class Readability implements LoggerAwareInterface
                 }
 
                 // Then check the elements inside this element for the same.
-                if (preg_match($this->regexps['media'], $targetList->item($y)->innerHTML)) {
+                if (preg_match($this->regexps['media'], $targetList->item($y)->getInnerHTML())) {
                     continue;
                 }
             }
@@ -655,7 +662,7 @@ class Readability implements LoggerAwareInterface
      * @param \DOMElement $e
      * @param string      $tag
      */
-    public function cleanConditionally($e, $tag)
+    public function cleanConditionally(\DOMElement $e, $tag)
     {
         if (!$this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
             return;
@@ -768,7 +775,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $e
      */
-    public function cleanHeaders($e)
+    public function cleanHeaders(\DOMElement $e)
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h' . $headerIndex);
@@ -871,7 +878,7 @@ class Readability implements LoggerAwareInterface
         }
 
         $articleTitle = $this->dom->createElement('h1');
-        $articleTitle->innerHTML = $curTitle;
+        $articleTitle->setInnerHtml($curTitle);
 
         return $articleTitle;
     }
@@ -911,7 +918,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $node
      */
-    protected function initializeNode($node)
+    protected function initializeNode(\DOMElement $node)
     {
         if (!isset($node->tagName)) {
             return;
@@ -981,9 +988,9 @@ class Readability implements LoggerAwareInterface
      *
      * @param \DOMElement $page
      *
-     * @return \DOMElement|bool
+     * @return \DOMElement|false
      */
-    protected function grabArticle($page = null)
+    protected function grabArticle(\DOMElement $page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -1009,11 +1016,11 @@ class Readability implements LoggerAwareInterface
             // Turn divs into P tags where they have been used inappropriately
             //  (as in, where they contain no other block level elements).
             if (0 === strcasecmp($tagName, 'div') || 0 === strcasecmp($tagName, 'article') || 0 === strcasecmp($tagName, 'section')) {
-                if (!preg_match($this->regexps['divToPElements'], $node->innerHTML)) {
+                if (!preg_match($this->regexps['divToPElements'], $node->getInnerHTML())) {
                     $newNode = $this->dom->createElement('p');
 
                     try {
-                        $newNode->innerHTML = $node->innerHTML;
+                        $newNode->setInnerHtml($node->getInnerHTML());
 
                         $node->parentNode->replaceChild($newNode, $node);
                         --$nodeIndex;
@@ -1040,7 +1047,7 @@ class Readability implements LoggerAwareInterface
 
                         if (XML_TEXT_NODE === $childNode->nodeType) {
                             $p = $this->dom->createElement('p');
-                            $p->innerHTML = $childNode->nodeValue;
+                            $p->setInnerHtml($childNode->nodeValue);
                             $p->setAttribute('data-readability-styled', 'true');
                             $childNode->parentNode->replaceChild($p, $childNode);
                         }
@@ -1190,14 +1197,14 @@ class Readability implements LoggerAwareInterface
                     $this->logger->debug('The page has no body!');
                 } else {
                     $this->logger->debug('Setting body to a raw HTML of original page!');
-                    $topCandidate->innerHTML = $page->documentElement->innerHTML;
-                    $page->documentElement->innerHTML = '';
+                    $topCandidate->setInnerHtml($page->documentElement->getInnerHTML());
+                    $page->documentElement->setInnerHtml('');
                     $this->reinitBody();
                     $page->documentElement->appendChild($topCandidate);
                 }
             } else {
-                $topCandidate->innerHTML = $page->innerHTML;
-                $page->innerHTML = '';
+                $topCandidate->setInnerHtml($page->getInnerHTML());
+                $page->setInnerHtml('');
                 $page->appendChild($topCandidate);
             }
 
@@ -1229,8 +1236,8 @@ class Readability implements LoggerAwareInterface
         $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
         $siblingNodes = $topCandidate->parentNode->childNodes;
 
-        if (!isset($siblingNodes)) {
-            $siblingNodes = new stdClass();
+        if (null === $siblingNodes) {
+            $siblingNodes = new \stdClass();
             $siblingNodes->length = 0;
         }
 
@@ -1276,7 +1283,7 @@ class Readability implements LoggerAwareInterface
 
                     try {
                         $nodeToAppend->setAttribute('alt', $siblingNodeName);
-                        $nodeToAppend->innerHTML = $siblingNode->innerHTML;
+                        $nodeToAppend->setInnerHtml($siblingNode->getInnerHTML());
                     } catch (\Exception $e) {
                         $this->logger->debug('Could not alter siblingNode "' . $siblingNodeName . '" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
@@ -1344,7 +1351,7 @@ class Readability implements LoggerAwareInterface
      *
      * @return int
      */
-    protected function weightAttribute($element, $attribute)
+    protected function weightAttribute(\DOMElement $element, $attribute)
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1379,7 +1386,7 @@ class Readability implements LoggerAwareInterface
     {
         if (!isset($this->body->childNodes)) {
             $this->body = $this->dom->createElement('body');
-            $this->body->innerHTML = $this->bodyCache;
+            $this->body->setInnerHtml($this->bodyCache);
         }
     }
 
@@ -1435,17 +1442,16 @@ class Readability implements LoggerAwareInterface
 
         $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
 
-        if (!('html5lib' === $this->parser && ($this->dom = Parser::parse($this->html)))) {
+        if ('html5lib' === $this->parser) {
+            $this->dom = Parser::parse($this->html);
+        }
+
+        if ('libxml' === $this->parser) {
             libxml_use_internal_errors(true);
 
             $this->dom = new \DOMDocument();
             $this->dom->preserveWhiteSpace = false;
-
-            if (\PHP_VERSION_ID >= 50400) {
-                $this->dom->loadHTML($this->html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
-            } else {
-                $this->dom->loadHTML($this->html);
-            }
+            $this->dom->loadHTML($this->html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
 
             libxml_use_internal_errors(false);
         }

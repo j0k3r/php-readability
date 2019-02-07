@@ -40,5 +40,8 @@
     },
     "autoload": {
         "psr-4": { "Readability\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Tests\\Readability\\": "tests/" }
     }
 }

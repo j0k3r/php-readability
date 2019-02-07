@@ -29,12 +29,14 @@ install:
     - composer self-update
 
 before_script:
+    - if [ "$CS_FIXER" = "run" ]; then composer require phpstan/phpstan phpstan/phpstan-phpunit --dev -n ; fi;
     - composer install -o --prefer-dist --no-interaction
 
 script:
     - mkdir -p build/logs
     - php vendor/bin/simple-phpunit -v --coverage-clover build/logs/clover.xml
     - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/php-cs-fixer fix --verbose --dry-run ; fi;
+    - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/phpstan analyse src tests --no-progress --level 1 ; fi;
 
 after_script:
     - php vendor/bin/php-coveralls -v -x build/logs/clover.xml

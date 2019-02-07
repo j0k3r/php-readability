@@ -127,4 +127,14 @@ class JSLikeHTMLElement extends \DOMElement
     {
         return '[' . $this->tagName . ']';
     }
+
+    public function getInnerHtml()
+    {
+        return $this->__get('innerHTML');
+    }
+
+    public function setInnerHtml($value)
+    {
+        return $this->__set('innerHTML', $value);
+    }
 }
