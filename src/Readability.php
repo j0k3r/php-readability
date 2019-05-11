@@ -61,7 +61,7 @@ class Readability implements LoggerAwareInterface
     // constants
     const SCORE_CHARS_IN_PARAGRAPH = 100;
     const SCORE_WORDS_IN_PARAGRAPH = 20;
-    const GRANDPARENT_SCORE_DIVISOR = 2.2;
+    const GRANDPARENT_SCORE_DIVISOR = 2;
     const MIN_PARAGRAPH_LENGTH = 20;
     const MIN_COMMAS_IN_PARAGRAPH = 6;
     const MIN_ARTICLE_LENGTH = 200;
@@ -1115,7 +1115,7 @@ class Readability implements LoggerAwareInterface
             // Add the score to the parent. The grandparent gets half.
             $parentNode->getAttributeNode('readability')->value += $contentScore;
             if ($grandParentNode) {
-                $grandParentNode->getAttributeNode('readability')->value += $contentScore / self::GRANDPARENT_SCORE_DIVISOR;
+                $grandParentNode->getAttributeNode('readability')->value += round($contentScore / self::GRANDPARENT_SCORE_DIVISOR);
             }
         }
 

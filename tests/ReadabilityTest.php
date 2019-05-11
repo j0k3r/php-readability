@@ -193,7 +193,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertContains('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertNotContains('<aside>', $readability->getContent()->getInnerHtml());
-        $this->assertContains('<footer readability="4"/>', $readability->getContent()->getInnerHtml());
+        $this->assertContains('<footer readability="5"/>', $readability->getContent()->getInnerHtml());
     }
 
     public function testWithClasses()
