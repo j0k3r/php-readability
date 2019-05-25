@@ -1008,6 +1008,12 @@ class Readability implements LoggerAwareInterface
         for ($nodeIndex = 0; ($node = $allElements->item($nodeIndex)); ++$nodeIndex) {
             $tagName = $node->tagName;
 
+            $nodeContent = $node->getInnerHTML();
+            if (empty($nodeContent)) {
+                $this->logger->debug('Skipping empty node');
+                continue;
+            }
+
             // Some well known site uses sections as paragraphs.
             if (0 === strcasecmp($tagName, 'p') || 0 === strcasecmp($tagName, 'td') || 0 === strcasecmp($tagName, 'pre') || 0 === strcasecmp($tagName, 'section')) {
                 $nodesToScore[] = $node;
@@ -1016,11 +1022,11 @@ class Readability implements LoggerAwareInterface
             // Turn divs into P tags where they have been used inappropriately
             //  (as in, where they contain no other block level elements).
             if (0 === strcasecmp($tagName, 'div') || 0 === strcasecmp($tagName, 'article') || 0 === strcasecmp($tagName, 'section')) {
-                if (!preg_match($this->regexps['divToPElements'], $node->getInnerHTML())) {
+                if (!preg_match($this->regexps['divToPElements'], $nodeContent)) {
                     $newNode = $this->dom->createElement('p');
 
                     try {
-                        $newNode->setInnerHtml($node->getInnerHTML());
+                        $newNode->setInnerHtml($nodeContent);
 
                         $node->parentNode->replaceChild($newNode, $node);
                         --$nodeIndex;
