@@ -307,8 +307,6 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Run any post-process modifications to article content as necessary.
-     *
-     * @param \DOMElement $articleContent
      */
     public function postProcessContent(\DOMElement $articleContent)
     {
@@ -321,8 +319,6 @@ class Readability implements LoggerAwareInterface
      * For easier reading, convert this document to have footnotes at the bottom rather than inline links.
      *
      * @see http://www.roughtype.com/archives/2010/05/experiments_in.php
-     *
-     * @param \DOMElement $articleContent
      */
     public function addFootnotes(\DOMElement $articleContent)
     {
@@ -385,8 +381,6 @@ class Readability implements LoggerAwareInterface
     /**
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
-     *
-     * @param \DOMNode $articleContent
      */
     public function prepArticle(\DOMNode $articleContent)
     {
@@ -558,8 +552,7 @@ class Readability implements LoggerAwareInterface
      * This is the amount of text that is inside a link divided by the total text in the node.
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
      *
-     * @param \DOMElement $e
-     * @param bool        $excludeExternal
+     * @param bool $excludeExternal
      *
      * @return int
      */
@@ -586,8 +579,6 @@ class Readability implements LoggerAwareInterface
     /**
      * Get an element relative weight.
      *
-     * @param \DOMElement $e
-     *
      * @return int
      */
     public function getWeight(\DOMElement $e)
@@ -607,8 +598,6 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Remove extraneous break tags from a node.
-     *
-     * @param \DOMElement $node
      */
     public function killBreaks(\DOMElement $node)
     {
@@ -623,8 +612,7 @@ class Readability implements LoggerAwareInterface
      *
      * Updated 2012-09-18 to preserve youtube/vimeo iframes
      *
-     * @param \DOMElement $e
-     * @param string      $tag
+     * @param string $tag
      */
     public function clean(\DOMElement $e, $tag)
     {
@@ -659,8 +647,7 @@ class Readability implements LoggerAwareInterface
      * "Fishy" is an algorithm based on content length, classnames,
      * link density, number of images & embeds, etc.
      *
-     * @param \DOMElement $e
-     * @param string      $tag
+     * @param string $tag
      */
     public function cleanConditionally(\DOMElement $e, $tag)
     {
@@ -772,8 +759,6 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Clean out spurious headers from an Element. Checks things like classnames and link density.
-     *
-     * @param \DOMElement $e
      */
     public function cleanHeaders(\DOMElement $e)
     {
@@ -915,8 +900,6 @@ class Readability implements LoggerAwareInterface
     /**
      * Initialize a node with the readability object. Also checks the
      * className/id for special names to add to its score.
-     *
-     * @param \DOMElement $node
      */
     protected function initializeNode(\DOMElement $node)
     {
@@ -1346,8 +1329,7 @@ class Readability implements LoggerAwareInterface
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
      *
-     * @param \DOMElement $element
-     * @param string      $attribute
+     * @param string $attribute
      *
      * @return int
      */
