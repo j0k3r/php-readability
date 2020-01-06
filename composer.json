@@ -33,9 +33,7 @@
         "php-coveralls/php-coveralls": "^2.1",
         "friendsofphp/php-cs-fixer": "^2.14",
         "monolog/monolog": "^1.24",
-        "symfony/phpunit-bridge": "^4.2.3",
-        "phpstan/phpstan-phpunit": "^0.11",
-        "phpstan/phpstan": "^0.11"
+        "symfony/phpunit-bridge": "^4.2.3"
     },
     "suggest": {
         "ext-tidy": "Used to clean up given HTML and to avoid problems with bad HTML structure."

@@ -36,6 +36,9 @@ script:
     - mkdir -p build/logs
     - php vendor/bin/simple-phpunit -v --coverage-clover build/logs/clover.xml
     - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/php-cs-fixer fix --verbose --dry-run ; fi;
+    # only install phpstan when we need it
+    - if [ "$CS_FIXER" = "run" ]; then composer require phpstan/phpstan --no-progress --no-suggest ; fi;
+    - if [ "$CS_FIXER" = "run" ]; then composer require phpstan/phpstan-phpunit --no-progress --no-suggest ; fi;
     - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/phpstan analyse src tests --no-progress --level 1 ; fi;
 
 after_script:
