@@ -27,12 +27,11 @@
         "php": ">=5.6.0",
         "ext-mbstring": "*",
         "psr/log": "^1.0",
-        "electrolinux/php-html5lib": "^0.1.0"
+        "masterminds/html5": "^2.7"
     },
     "require-dev": {
-        "php-coveralls/php-coveralls": "^2.1",
         "friendsofphp/php-cs-fixer": "^2.14",
-        "monolog/monolog": "^1.24",
+        "monolog/monolog": "^1.24|^2.1",
         "symfony/phpunit-bridge": "^4.2.3"
     },
     "suggest": {

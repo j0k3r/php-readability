@@ -4,7 +4,6 @@
 /.scrutinizer.yml export-ignore
 /.travis.yml export-ignore
 /.php_cs export-ignore
-/README.md export-ignore
 /phpunit.xml.dist export-ignore
-/tests export-ignore
 /phpstan.neon export-ignore
+/tests export-ignore

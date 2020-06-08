@@ -2,7 +2,7 @@
 
 namespace Readability;
 
-use HTML5Lib\Parser;
+use Masterminds\HTML5;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -616,7 +616,6 @@ class Readability implements LoggerAwareInterface
      */
     public function clean(\DOMElement $e, $tag)
     {
-        $currentItem = null;
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
 
@@ -657,7 +656,6 @@ class Readability implements LoggerAwareInterface
 
         $tagsList = $e->getElementsByTagName($tag);
         $curTagsLength = $tagsList->length;
-        $node = null;
 
         /*
          * Gather counts for other typical elements embedded within.
@@ -1108,7 +1106,6 @@ class Readability implements LoggerAwareInterface
          */
         if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
             $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
-            $node = null;
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
@@ -1120,7 +1117,6 @@ class Readability implements LoggerAwareInterface
             }
 
             $candidates = $xpath->query('.//*[not(self::body) and (@class or @id or @style) and ((number(@readability) < 40) or not(@readability))]', $page->documentElement);
-            $node = null;
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
@@ -1424,8 +1420,8 @@ class Readability implements LoggerAwareInterface
 
         $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
 
-        if ('html5lib' === $this->parser) {
-            $this->dom = Parser::parse($this->html);
+        if ('html5lib' === $this->parser || 'html5' === $this->parser) {
+            $this->dom = (new HTML5())->loadHTML($this->html);
         }
 
         if ('libxml' === $this->parser) {

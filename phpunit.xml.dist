@@ -26,6 +26,6 @@
     </filter>
 
     <!-- <logging>
-        <log type="coverage-html" target="coverage" title="Readability" charset="UTF-8" yui="true" highlight="true" lowUpperBound="35" highLowerBound="70"/>
+        <log type="coverage-html" target="coverage" lowUpperBound="35" highLowerBound="70"/>
     </logging> -->
 </phpunit>
