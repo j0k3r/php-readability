@@ -31,8 +31,8 @@ before_install:
     - if [ -n "$GH_TOKEN" ]; then composer config github-oauth.github.com ${GH_TOKEN}; fi;
 
 install:
-    # only install phpstan when we need it
     - if [ "$CS_FIXER" = "run" ]; then composer require phpstan/phpstan phpstan/phpstan-phpunit --dev --no-progress --no-suggest ; fi;
+    - if [ "$CS_FIXER" != "run" ]; then composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update ; fi;
     - composer update --prefer-dist --no-progress --no-suggest -o $COMPOSER_FLAGS
     - php vendor/bin/simple-phpunit install
 
