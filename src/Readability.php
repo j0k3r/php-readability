@@ -116,7 +116,6 @@ class Readability implements LoggerAwareInterface
         'drop-empty-paras' => true,
         'drop-proprietary-attributes' => false,
         'enclose-text' => true,
-        'enclose-block-text' => true,
         'merge-divs' => true,
         // 'merge-spans' => true,
         'input-encoding' => '????',
