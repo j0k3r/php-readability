@@ -1,8 +1,13 @@
+parameters:
+    level: 1
+    paths:
+        - src
+        - tests
+
+    # https://github.com/phpstan/phpstan/issues/694#issuecomment-350724288
+    bootstrapFiles:
+        - vendor/bin/.phpunit/phpunit-7.5-0/vendor/autoload.php
+
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
-
-parameters:
-    # https://github.com/phpstan/phpstan/issues/694#issuecomment-350724288
-    autoload_files:
-        - vendor/bin/.phpunit/phpunit-7.5-0/vendor/autoload.php
