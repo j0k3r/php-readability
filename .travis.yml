@@ -2,26 +2,18 @@ dist: xenial
 os: linux
 language: php
 
-php:
-    - 5.6
-    - 7.0
-    - 7.1
+# avoid double Travis build when the PR is created on upstream
+if: |
+    type = pull_request OR \
+    branch = master
 
 jobs:
     include:
-        - php: 7.2
-          env: SYMFONY_PHPUNIT_VERSION=7.5
-        - php: 7.2
-          env: SYMFONY_PHPUNIT_VERSION=7.5 COMPOSER_FLAGS="--prefer-lowest"
-        - php: 7.3
-          env: SYMFONY_PHPUNIT_VERSION=7.5 CS_FIXER=run COVERAGE=run
-        - php: 7.4
-          env: SYMFONY_PHPUNIT_VERSION=7.5
-        - php: nightly
+        - php: 8.0
           env: SYMFONY_PHPUNIT_VERSION=7.5
     fast_finish: true
     allow_failures:
-        - php: nightly
+        - php: 8.0
 
 cache:
     directories:
@@ -31,24 +23,12 @@ before_install:
     - if [ -n "$GH_TOKEN" ]; then composer config github-oauth.github.com ${GH_TOKEN}; fi;
 
 install:
-    - if [ "$CS_FIXER" = "run" ]; then composer require phpstan/phpstan phpstan/phpstan-phpunit --dev --no-progress --no-suggest ; fi;
     - if [ "$CS_FIXER" != "run" ]; then composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update ; fi;
-    - composer update --prefer-dist --no-progress --no-suggest -o $COMPOSER_FLAGS
+    - composer update --prefer-dist --no-progress --no-suggest -o $
     - php vendor/bin/simple-phpunit install
 
 before_script:
     - mkdir -p build/logs
-    - if [ "$COVERAGE" = "run" ]; then PHPUNIT_FLAGS="--coverage-clover build/logs/clover.xml"; fi;
 
 script:
-    - php vendor/bin/simple-phpunit -v $PHPUNIT_FLAGS
-    - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/php-cs-fixer fix --verbose --dry-run ; fi;
-    - if [ "$CS_FIXER" = "run" ]; then php vendor/bin/phpstan analyse src tests --no-progress --level 1 ; fi;
-
-after_success:
-    - |
-        if [ "$COVERAGE" = "run" ]; then
-            wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.2.0/php-coveralls.phar
-            chmod +x php-coveralls.phar
-            php php-coveralls.phar -v -x build/logs/clover.xml
-        fi
+    - php vendor/bin/simple-phpunit -v
