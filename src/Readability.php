@@ -291,6 +291,11 @@ class Readability implements LoggerAwareInterface
         $innerDiv->appendChild($articleContent);
         $overlay->appendChild($innerDiv);
 
+        // without tidy the body can (sometimes) be wiped, so re-create it
+        if (false === isset($this->body->childNodes)) {
+            $this->body = $this->dom->createElement('body');
+        }
+
         // Clear the old HTML, insert the new content.
         $this->body->setInnerHtml('');
         $this->body->appendChild($overlay);
@@ -335,9 +340,9 @@ class Readability implements LoggerAwareInterface
             $footnoteLink = $articleLink->cloneNode(true);
             $refLink = $this->dom->createElement('a');
             $footnote = $this->dom->createElement('li');
-            $linkDomain = @parse_url($footnoteLink->getAttribute('href'), PHP_URL_HOST);
+            $linkDomain = @parse_url($footnoteLink->getAttribute('href'), \PHP_URL_HOST);
             if (!$linkDomain && isset($this->url)) {
-                $linkDomain = @parse_url($this->url, PHP_URL_HOST);
+                $linkDomain = @parse_url($this->url, \PHP_URL_HOST);
             }
 
             $linkText = $this->getInnerText($articleLink);
@@ -934,7 +939,7 @@ class Readability implements LoggerAwareInterface
             case 'DD':
             case 'DT':
             case 'LI':
-                $readability->value -= 2 * round($this->getLinkDensity($node), 0, PHP_ROUND_HALF_UP);
+                $readability->value -= 2 * round($this->getLinkDensity($node), 0, \PHP_ROUND_HALF_UP);
                 break;
             case 'ASIDE':
             case 'FOOTER':
@@ -1025,7 +1030,7 @@ class Readability implements LoggerAwareInterface
                             continue;
                         }
 
-                        if (XML_TEXT_NODE === $childNode->nodeType) {
+                        if (\XML_TEXT_NODE === $childNode->nodeType) {
                             $p = $this->dom->createElement('p');
                             $p->setInnerHtml($childNode->nodeValue);
                             $p->setAttribute('data-readability-styled', 'true');
@@ -1151,7 +1156,7 @@ class Readability implements LoggerAwareInterface
                 // relatively small link density (5% or less) and be mostly unaffected by this operation.
                 // If not for this we would have used XPath to find maximum @readability.
                 $readability = $item->getAttributeNode('readability');
-                $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, PHP_ROUND_HALF_UP);
+                $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, \PHP_ROUND_HALF_UP);
 
                 if (!$topCandidate || $readability->value > (int) $topCandidate->getAttribute('readability')) {
                     $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
@@ -1223,7 +1228,7 @@ class Readability implements LoggerAwareInterface
             $siblingNode = $siblingNodes->item($s);
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
-            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . ((XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
+            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . ((\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
 
             if ($siblingNode->isSameNode($topCandidate)) {
                 $append = true;
@@ -1232,11 +1237,11 @@ class Readability implements LoggerAwareInterface
             $contentBonus = 0;
 
             // Give a bonus if sibling nodes and top candidates have the same classname.
-            if (XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
+            if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
                 $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
             }
 
-            if (XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
+            if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
                 $append = true;
             }
 
@@ -1381,7 +1386,7 @@ class Readability implements LoggerAwareInterface
         $this->logger->debug('Parsing URL: ' . $this->url);
 
         if ($this->url) {
-            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, PHP_URL_HOST)), ['.' => '\.']) . '/';
+            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, \PHP_URL_HOST)), ['.' => '\.']) . '/';
         }
 
         mb_internal_encoding('UTF-8');
@@ -1428,7 +1433,7 @@ class Readability implements LoggerAwareInterface
 
             $this->dom = new \DOMDocument();
             $this->dom->preserveWhiteSpace = false;
-            $this->dom->loadHTML($this->html, LIBXML_NOBLANKS | LIBXML_COMPACT | LIBXML_NOERROR);
+            $this->dom->loadHTML($this->html, \LIBXML_NOBLANKS | \LIBXML_COMPACT | \LIBXML_NOERROR);
 
             libxml_use_internal_errors(false);
         }
