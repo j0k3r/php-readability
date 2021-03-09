@@ -332,9 +332,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
 
     public function testAutoClosingIframeNotThrowingException()
     {
-        error_reporting(E_ALL | E_STRICT);
+        error_reporting(\E_ALL | \E_STRICT);
         ini_set('display_errors', true);
-        set_error_handler([$this, 'error2Exception'], E_ALL | E_STRICT);
+        set_error_handler([$this, 'error2Exception'], \E_ALL | \E_STRICT);
 
         $data = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml" lang="ru-RU" prefix="og: http://ogp.me/ns#">
@@ -481,6 +481,19 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($res);
         $this->assertContains('<sup id="fnref1:fnfeed_2"><a href="#fn:fnfeed_2" class="footnote-ref">2</a></sup>', $readability->getContent()->getInnerHtml());
         $this->assertContains('<a href="#fnref1:fnfeed_2" rev="footnote"', $readability->getContent()->getInnerHtml());
+    }
+
+    public function testWithWipedBody()
+    {
+        // from https://www.cs.cmu.edu/~rgs/alice-table.html
+        $html = file_get_contents('tests/fixtures/wipedBody.html');
+
+        $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', false);
+        $readability->debug = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertContains('<a href="alice-I.html">Down the Rabbit-Hole</a>', $readability->getContent()->getInnerHtml());
     }
 
     private function getReadability($html, $url = null, $parser = 'libxml', $useTidy = true)
