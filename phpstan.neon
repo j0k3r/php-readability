@@ -6,7 +6,7 @@ parameters:
 
     # https://github.com/phpstan/phpstan/issues/694#issuecomment-350724288
     bootstrapFiles:
-        - vendor/bin/.phpunit/phpunit-8.5-0/vendor/autoload.php
+        - vendor/bin/.phpunit/phpunit-7.5-0/vendor/autoload.php
 
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon

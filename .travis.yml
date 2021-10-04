@@ -24,7 +24,7 @@ before_install:
 
 install:
     - if [ "$CS_FIXER" != "run" ]; then composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update ; fi;
-    - composer update --prefer-dist --no-progress --no-suggest -o $
+    - composer update --prefer-dist --no-progress -o
     - php vendor/bin/simple-phpunit install
 
 before_script:
