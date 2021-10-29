@@ -157,7 +157,7 @@ class Readability implements LoggerAwareInterface
         // replace excessive br's
         '/<br\s*\/?>\s*<p/i' => '<p',
         // replace empty tags that break layouts
-        '!<(?:a|div|p)[^>]+/>!is' => '',
+        '!<(?:a|div|p|figure)[^>]+/>!is' => '',
         // remove all attributes on text tags
         //'!<(\s*/?\s*(?:blockquote|br|hr|code|div|article|span|footer|aside|p|pre|dl|li|ul|ol)) [^>]+>!is' => "<\\1>",
         //single newlines cleanup
