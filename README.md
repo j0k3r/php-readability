@@ -1,7 +1,6 @@
 # Readability
 
 ![CI](https://github.com/j0k3r/php-readability/workflows/CI/badge.svg)
-[![Build Status](https://travis-ci.org/j0k3r/php-readability.svg?branch=master)](https://travis-ci.org/j0k3r/php-readability)
 [![Coverage Status](https://coveralls.io/repos/j0k3r/php-readability/badge.svg?branch=master&service=github)](https://coveralls.io/github/j0k3r/php-readability/?branch=master)
 [![Total Downloads](https://poser.pugx.org/j0k3r/php-readability/downloads)](https://packagist.org/packages/j0k3r/php-readability)
 [![License](https://poser.pugx.org/j0k3r/php-readability/license)](https://packagist.org/packages/j0k3r/php-readability)

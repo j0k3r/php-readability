@@ -187,6 +187,9 @@ class Readability implements LoggerAwareInterface
         $this->loadHtml();
     }
 
+    /**
+     * @return void
+     */
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
