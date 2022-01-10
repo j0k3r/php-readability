@@ -5,7 +5,7 @@
 [![Total Downloads](https://poser.pugx.org/j0k3r/php-readability/downloads)](https://packagist.org/packages/j0k3r/php-readability)
 [![License](https://poser.pugx.org/j0k3r/php-readability/license)](https://packagist.org/packages/j0k3r/php-readability)
 
-This is an extract of the Readability class from this [full-text-rss](https://github.com/Dither/full-text-rss) fork. It can be defined as a better version of the original [php-readability](https://bitbucket.org/fivefilters/php-readability/overview).
+This is an extract of the Readability class from this [full-text-rss](https://github.com/Dither/full-text-rss) fork. It can be defined as a better version of the original [php-readability](https://bitbucket.org/fivefilters/php-readability).
 
 ## Differences
 

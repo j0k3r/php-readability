@@ -53,20 +53,20 @@ use Psr\Log\NullLogger;
 class Readability implements LoggerAwareInterface
 {
     // flags
-    const FLAG_STRIP_UNLIKELYS = 1;
-    const FLAG_WEIGHT_ATTRIBUTES = 2;
-    const FLAG_CLEAN_CONDITIONALLY = 4;
-    const FLAG_DISABLE_PREFILTER = 8;
-    const FLAG_DISABLE_POSTFILTER = 16;
+    public const FLAG_STRIP_UNLIKELYS = 1;
+    public const FLAG_WEIGHT_ATTRIBUTES = 2;
+    public const FLAG_CLEAN_CONDITIONALLY = 4;
+    public const FLAG_DISABLE_PREFILTER = 8;
+    public const FLAG_DISABLE_POSTFILTER = 16;
     // constants
-    const SCORE_CHARS_IN_PARAGRAPH = 100;
-    const SCORE_WORDS_IN_PARAGRAPH = 20;
-    const GRANDPARENT_SCORE_DIVISOR = 2;
-    const MIN_PARAGRAPH_LENGTH = 20;
-    const MIN_COMMAS_IN_PARAGRAPH = 6;
-    const MIN_ARTICLE_LENGTH = 200;
-    const MIN_NODE_LENGTH = 80;
-    const MAX_LINK_DENSITY = 0.25;
+    public const SCORE_CHARS_IN_PARAGRAPH = 100;
+    public const SCORE_WORDS_IN_PARAGRAPH = 20;
+    public const GRANDPARENT_SCORE_DIVISOR = 2;
+    public const MIN_PARAGRAPH_LENGTH = 20;
+    public const MIN_COMMAS_IN_PARAGRAPH = 6;
+    public const MIN_ARTICLE_LENGTH = 200;
+    public const MIN_NODE_LENGTH = 80;
+    public const MAX_LINK_DENSITY = 0.25;
     public $convertLinksToFootnotes = false;
     public $revertForcedParagraphElements = true;
     public $articleTitle;
@@ -171,26 +171,22 @@ class Readability implements LoggerAwareInterface
     /**
      * Create instance of Readability.
      *
-     * @param string $html     UTF-8 encoded string
-     * @param string $url      URL associated with HTML (for footnotes)
-     * @param string $parser   Which parser to use for turning raw HTML into a DOMDocument
-     * @param bool   $use_tidy Use tidy
+     * @param string $html    UTF-8 encoded string
+     * @param string $url     URL associated with HTML (for footnotes)
+     * @param string $parser  Which parser to use for turning raw HTML into a DOMDocument
+     * @param bool   $useTidy Use tidy
      */
-    public function __construct($html, $url = null, $parser = 'libxml', $use_tidy = true)
+    public function __construct(string $html, string $url = null, string $parser = 'libxml', bool $useTidy = true)
     {
         $this->url = $url;
         $this->html = $html;
         $this->parser = $parser;
-        $this->useTidy = $use_tidy && \function_exists('tidy_parse_string');
+        $this->useTidy = $useTidy && \function_exists('tidy_parse_string');
 
         $this->logger = new NullLogger();
-        $this->loadHtml();
     }
 
-    /**
-     * @return void
-     */
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
@@ -221,7 +217,7 @@ class Readability implements LoggerAwareInterface
      * @param string $filter   RegExp for replace
      * @param string $replacer Replacer
      */
-    public function addPreFilter($filter, $replacer = '')
+    public function addPreFilter(string $filter, string $replacer = ''): void
     {
         $this->pre_filters[$filter] = $replacer;
     }
@@ -232,7 +228,7 @@ class Readability implements LoggerAwareInterface
      * @param string $filter   RegExp for replace
      * @param string $replacer Replacer
      */
-    public function addPostFilter($filter, $replacer = '')
+    public function addPostFilter(string $filter, string $replacer = ''): void
     {
         $this->post_filters[$filter] = $replacer;
     }
@@ -249,8 +245,10 @@ class Readability implements LoggerAwareInterface
      *
      * @return bool true if we found content, false otherwise
      */
-    public function init()
+    public function init(): bool
     {
+        $this->loadHtml();
+
         if (!isset($this->dom->documentElement)) {
             return false;
         }
@@ -315,7 +313,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Run any post-process modifications to article content as necessary.
      */
-    public function postProcessContent(\DOMElement $articleContent)
+    public function postProcessContent(\DOMElement $articleContent): void
     {
         if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
@@ -327,7 +325,7 @@ class Readability implements LoggerAwareInterface
      *
      * @see http://www.roughtype.com/archives/2010/05/experiments_in.php
      */
-    public function addFootnotes(\DOMElement $articleContent)
+    public function addFootnotes(\DOMElement $articleContent): void
     {
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
@@ -389,7 +387,7 @@ class Readability implements LoggerAwareInterface
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
      */
-    public function prepArticle(\DOMNode $articleContent)
+    public function prepArticle(\DOMNode $articleContent): void
     {
         if (!$articleContent instanceof \DOMElement) {
             return;
@@ -491,10 +489,8 @@ class Readability implements LoggerAwareInterface
      * @param \DOMElement $e
      * @param bool        $normalizeSpaces (default: true)
      * @param bool        $flattenLines    (default: false)
-     *
-     * @return string
      */
-    public function getInnerText($e, $normalizeSpaces = true, $flattenLines = false)
+    public function getInnerText($e, bool $normalizeSpaces = true, bool $flattenLines = false): string
     {
         if (null === $e || !isset($e->textContent) || '' === $e->textContent) {
             return '';
@@ -503,9 +499,11 @@ class Readability implements LoggerAwareInterface
         $textContent = trim($e->textContent);
 
         if ($flattenLines) {
-            $textContent = mb_ereg_replace('(?:[\r\n](?:\s|&nbsp;)*)+', '', $textContent);
-        } elseif ($normalizeSpaces) {
-            $textContent = mb_ereg_replace('\s\s+', ' ', $textContent);
+            return (string) mb_ereg_replace('(?:[\r\n](?:\s|&nbsp;)*)+', '', $textContent);
+        }
+
+        if ($normalizeSpaces) {
+            return (string) mb_ereg_replace('\s\s+', ' ', $textContent);
         }
 
         return $textContent;
@@ -513,30 +511,22 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Remove the style attribute on every $e and under.
-     *
-     * @param \DOMElement $e
      */
-    public function cleanStyles($e)
+    public function cleanStyles(\DOMElement $e): void
     {
-        if (!\is_object($e)) {
-            return;
-        }
+        if (\is_object($e)) {
+            $elems = $e->getElementsByTagName('*');
 
-        $elems = $e->getElementsByTagName('*');
-
-        foreach ($elems as $elem) {
-            $elem->removeAttribute('style');
+            foreach ($elems as $elem) {
+                $elem->removeAttribute('style');
+            }
         }
     }
 
     /**
      * Get comma number for a given text.
-     *
-     * @param string $text
-     *
-     * @return int
      */
-    public function getCommaCount($text)
+    public function getCommaCount(string $text): int
     {
         return substr_count($text, ',');
     }
@@ -544,12 +534,8 @@ class Readability implements LoggerAwareInterface
     /**
      * Get words number for a given text if words separated by a space.
      * Input string should be normalized.
-     *
-     * @param string $text
-     *
-     * @return int
      */
-    public function getWordCount($text)
+    public function getWordCount(string $text): int
     {
         return substr_count($text, ' ');
     }
@@ -558,12 +544,8 @@ class Readability implements LoggerAwareInterface
      * Get the density of links as a percentage of the content
      * This is the amount of text that is inside a link divided by the total text in the node.
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
-     *
-     * @param bool $excludeExternal
-     *
-     * @return int
      */
-    public function getLinkDensity(\DOMElement $e, $excludeExternal = false)
+    public function getLinkDensity(\DOMElement $e, bool $excludeExternal = false): float
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
@@ -585,10 +567,8 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Get an element relative weight.
-     *
-     * @return int
      */
-    public function getWeight(\DOMElement $e)
+    public function getWeight(\DOMElement $e): int
     {
         if (!$this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
             return 0;
@@ -606,7 +586,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Remove extraneous break tags from a node.
      */
-    public function killBreaks(\DOMElement $node)
+    public function killBreaks(\DOMElement $node): void
     {
         $html = $node->getInnerHTML();
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
@@ -618,10 +598,8 @@ class Readability implements LoggerAwareInterface
      * (Unless it's a youtube/vimeo video. People love movies.).
      *
      * Updated 2012-09-18 to preserve youtube/vimeo iframes
-     *
-     * @param string $tag
      */
-    public function clean(\DOMElement $e, $tag)
+    public function clean(\DOMElement $e, string $tag): void
     {
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
@@ -652,10 +630,8 @@ class Readability implements LoggerAwareInterface
      * Clean an element of all tags of type "tag" if they look fishy.
      * "Fishy" is an algorithm based on content length, classnames,
      * link density, number of images & embeds, etc.
-     *
-     * @param string $tag
      */
-    public function cleanConditionally(\DOMElement $e, $tag)
+    public function cleanConditionally(\DOMElement $e, string $tag): void
     {
         if (!$this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
             return;
@@ -765,7 +741,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Clean out spurious headers from an Element. Checks things like classnames and link density.
      */
-    public function cleanHeaders(\DOMElement $e)
+    public function cleanHeaders(\DOMElement $e): void
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h' . $headerIndex);
@@ -780,55 +756,26 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Check if the given flag is active.
-     *
-     * @param int $flag
-     *
-     * @return bool
      */
-    public function flagIsActive($flag)
+    public function flagIsActive(int $flag): bool
     {
         return ($this->flags & $flag) > 0;
     }
 
     /**
      * Add a flag.
-     *
-     * @param int $flag
      */
-    public function addFlag($flag)
+    public function addFlag(int $flag): void
     {
         $this->flags = $this->flags | $flag;
     }
 
     /**
      * Remove a flag.
-     *
-     * @param int $flag
      */
-    public function removeFlag($flag)
+    public function removeFlag(int $flag): void
     {
         $this->flags = $this->flags & ~$flag;
-    }
-
-    /**
-     * Debug.
-     *
-     * @deprecated use $this->logger->debug() instead
-     * @codeCoverageIgnore
-     */
-    protected function dbg($msg)
-    {
-        $this->logger->debug($msg);
-    }
-
-    /**
-     * Dump debug info.
-     *
-     * @deprecated since Monolog gather log, we don't need it
-     * @codeCoverageIgnore
-     */
-    protected function dump_dbg()
-    {
     }
 
     /**
@@ -877,7 +824,7 @@ class Readability implements LoggerAwareInterface
      * Prepare the HTML document for readability to scrape it.
      * This includes things like stripping javascript, CSS, and handling terrible markup.
      */
-    protected function prepDocument()
+    protected function prepDocument(): void
     {
         /*
          * In some cases a body element can't be found (if the HTML is totally hosed for example)
@@ -906,7 +853,7 @@ class Readability implements LoggerAwareInterface
      * Initialize a node with the readability object. Also checks the
      * className/id for special names to add to its score.
      */
-    protected function initializeNode(\DOMElement $node)
+    protected function initializeNode(\DOMElement $node): void
     {
         if (!isset($node->tagName)) {
             return;
@@ -993,7 +940,8 @@ class Readability implements LoggerAwareInterface
 
         $allElements = $page->getElementsByTagName('*');
 
-        for ($nodeIndex = 0; ($node = $allElements->item($nodeIndex)); ++$nodeIndex) {
+        for ($nodeIndex = 0; $allElements->item($nodeIndex); ++$nodeIndex) {
+            $node = $allElements->item($nodeIndex);
             $tagName = $node->tagName;
 
             $nodeContent = $node->getInnerHTML();
@@ -1107,7 +1055,7 @@ class Readability implements LoggerAwareInterface
             $contentScore += max(min($score, 3), -3);/**/
 
             // Add the score to the parent. The grandparent gets half.
-            $parentNode->getAttributeNode('readability')->value += $contentScore;
+            $parentNode->getAttributeNode('readability')->value = ((float) $parentNode->getAttributeNode('readability')->value) + $contentScore;
             if ($grandParentNode) {
                 $grandParentNode->getAttributeNode('readability')->value += round($contentScore / self::GRANDPARENT_SCORE_DIVISOR);
             }
@@ -1228,7 +1176,7 @@ class Readability implements LoggerAwareInterface
         $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
         $siblingNodes = $topCandidate->parentNode->childNodes;
 
-        if (null === $siblingNodes) {
+        if (0 === $siblingNodes->length) {
             $siblingNodes = new \stdClass();
             $siblingNodes->length = 0;
         }
@@ -1260,7 +1208,7 @@ class Readability implements LoggerAwareInterface
                 $nodeLength = mb_strlen($nodeContent);
 
                 if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
-                    || ($nodeLength < self::MIN_NODE_LENGTH && 0 === $linkDensity && preg_match('/\.( |$)/', $nodeContent))) {
+                    || ($nodeLength < self::MIN_NODE_LENGTH && 0 === (int) $linkDensity && preg_match('/\.( |$)/', $nodeContent))) {
                     $append = true;
                 }
             }
@@ -1337,12 +1285,8 @@ class Readability implements LoggerAwareInterface
     /**
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
-     *
-     * @param string $attribute
-     *
-     * @return int
      */
-    protected function weightAttribute(\DOMElement $element, $attribute)
+    protected function weightAttribute(\DOMElement $element, string $attribute): int
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1373,7 +1317,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Will recreate previously deleted body property.
      */
-    protected function reinitBody()
+    protected function reinitBody(): void
     {
         if (!isset($this->body->childNodes)) {
             $this->body = $this->dom->createElement('body');
@@ -1388,14 +1332,14 @@ class Readability implements LoggerAwareInterface
      *
      * @todo This should be called in init() instead of from __construct
      */
-    private function loadHtml()
+    private function loadHtml(): void
     {
         $this->original_html = $this->html;
 
         $this->logger->debug('Parsing URL: ' . $this->url);
 
         if ($this->url) {
-            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, \PHP_URL_HOST)), ['.' => '\.']) . '/';
+            $this->domainRegExp = '/' . strtr((string) preg_replace('/www\d*\./', '', (string) parse_url($this->url, \PHP_URL_HOST)), ['.' => '\.']) . '/';
         }
 
         mb_internal_encoding('UTF-8');
@@ -1431,7 +1375,7 @@ class Readability implements LoggerAwareInterface
             unset($tidy);
         }
 
-        $this->html = mb_convert_encoding($this->html, 'HTML-ENTITIES', 'UTF-8');
+        $this->html = mb_convert_encoding((string) $this->html, 'HTML-ENTITIES', 'UTF-8');
 
         if ('html5lib' === $this->parser || 'html5' === $this->parser) {
             $this->dom = (new HTML5())->loadHTML($this->html);

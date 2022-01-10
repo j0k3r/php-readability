@@ -19,13 +19,11 @@ jobs:
     strategy:
       matrix:
         php:
-          - "5.6"
-          - "7.0"
-          - "7.1"
           - "7.2"
           - "7.3"
           - "7.4"
           - "8.0"
+          - "8.1"
 
     steps:
       - name: "Checkout"
@@ -38,17 +36,11 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "none"
-          tools: composer:v1
+          tools: composer:v2
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
           COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "Force PHPUnit version"
-        if: matrix.php >= '7.2'
-        run: "echo $SYMFONY_PHPUNIT_VERSION"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
 
       - name: "Remove useless deps"
         run: "composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update"
@@ -84,7 +76,7 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "xdebug"
-          tools: composer:v1
+          tools: composer:v2
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
@@ -103,8 +95,6 @@ jobs:
 
       - name: "Run PHPUnit (with coverage)"
         run: "php vendor/bin/simple-phpunit -v --coverage-clover build/logs/clover.xml"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
 
       - name: "Retrieve Coveralls phar"
         run: "wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.4.2/php-coveralls.phar"
@@ -137,7 +127,7 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "none"
-          tools: composer:v1
+          tools: composer:v2
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
@@ -157,47 +147,3 @@ jobs:
 
       - name: "Run PHPUnit"
         run: "php vendor/bin/simple-phpunit -v"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
-
-  phpunit-composerv2:
-    name: "PHPUnit with Composer v2 (PHP ${{ matrix.php }})"
-    runs-on: "ubuntu-20.04"
-
-    strategy:
-      matrix:
-        php:
-          - "7.4"
-
-    steps:
-      - name: "Checkout"
-        uses: "actions/checkout@v2"
-        with:
-          fetch-depth: 2
-
-      - name: "Install PHP"
-        uses: "shivammathur/setup-php@v2"
-        with:
-          php-version: "${{ matrix.php }}"
-          coverage: "none"
-          tools: composer:v2
-          extensions: tidy
-          ini-values: "date.timezone=Europe/Paris"
-        env:
-          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "Remove useless deps"
-        run: "composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update"
-
-      - name: "Install dependencies with Composer"
-        uses: "ramsey/composer-install@v1"
-        with:
-          composer-options: "--optimize-autoloader --prefer-dist"
-
-      - name: "Setup logs"
-        run: "mkdir -p build/logs"
-
-      - name: "Run PHPUnit"
-        run: "php vendor/bin/simple-phpunit -v"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5

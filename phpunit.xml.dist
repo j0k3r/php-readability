@@ -11,7 +11,7 @@
     >
 
     <testsuites>
-        <testsuite name="Readability Test Suite">
+        <testsuite name="Readability">
             <directory>./tests/</directory>
         </testsuite>
     </testsuites>
