@@ -7,49 +7,6 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
-/**
- * Arc90's Readability ported to PHP for FiveFilters.org
- * Based on readability.js version 1.7.1 (without multi-page support)
- * ------------------------------------------------------
- * Original URL: http://lab.arc90.com/experiments/readability/js/readability.js
- * Arc90's project URL: http://lab.arc90.com/experiments/readability/
- * JS Source: http://code.google.com/p/arc90labs-readability
- * Ported by: Keyvan Minoukadeh, http://www.keyvan.net
- * Modded by: Dither, https://dithersky.wordpress.com
- * More information: http://fivefilters.org/content-only/
- * License: Apache License, Version 2.0
- * Requires: PHP version 5.2.0+
- * Date: 2013-08-02.
- *
- * Differences between the PHP port and the original
- * ------------------------------------------------------
- * Arc90's Readability is designed to run in the browser. It works on the DOM
- * tree (the parsed HTML) after the page's CSS styles have been applied and
- * Javascript code executed. This PHP port does not run inside a browser.
- * We use PHP's ability to parse HTML to build our DOM tree, but we cannot
- * rely on CSS or Javascript support. As such, the results will not always
- * match Arc90's Readability. (For example, if a web page contains CSS style
- * rules or Javascript code which hide certain HTML elements from display,
- * Arc90's Readability will dismiss those from consideration but our PHP port,
- * unable to understand CSS or Javascript, will not know any better.)
- *
- * Another significant difference is that the aim of Arc90's Readability is
- * to re-present the main content block of a given web page so users can
- * read it more easily in their browsers. Correct identification, clean up,
- * and separation of the content block is only a part of this process.
- * This PHP port is only concerned with this part, it does not include code
- * that relates to presentation in the browser - Arc90 already do
- * that extremely well, and for PDF output there's FiveFilters.org's
- * PDF Newspaper: http://fivefilters.org/pdf-newspaper/.
- *
- * Finally, this class contains methods that might be useful for developers
- * working on HTML document fragments. So without deviating too much from
- * the original code (which I don't want to do because it makes debugging
- * and updating more difficult), I've tried to make it a little more
- * developer friendly. You should be able to use the methods here on
- * existing DOMElement objects without passing an entire HTML document to
- * be parsed.
- */
 class Readability implements LoggerAwareInterface
 {
     // flags
@@ -1329,8 +1286,6 @@ class Readability implements LoggerAwareInterface
      * Load HTML in a DOMDocument.
      * Apply Pre filters
      * Cleanup HTML using Tidy (or not).
-     *
-     * @todo This should be called in init() instead of from __construct
      */
     private function loadHtml(): void
     {
