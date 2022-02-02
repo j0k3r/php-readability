@@ -8,9 +8,6 @@ on:
     branches:
       - master
 
-env:
-  SYMFONY_PHPUNIT_VERSION: 7.5
-
 jobs:
   coding-standards:
     name: "CS Fixer & PHPStan"
@@ -34,9 +31,6 @@ jobs:
           ini-values: "date.timezone=Europe/Paris"
         env:
           COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "Add PHPStan"
-        run: "composer require phpstan/phpstan phpstan/phpstan-phpunit --dev --no-progress --no-suggest"
 
       - name: "Install dependencies with Composer"
         uses: "ramsey/composer-install@v1"
