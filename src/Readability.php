@@ -55,6 +55,7 @@ class Readability implements LoggerAwareInterface
         'media' => '!//(?:[^\.\?/]+\.)?(?:youtu(?:be)?|giphy|soundcloud|dailymotion|vimeo|pornhub|xvideos|twitvid|rutube|openload\.co|viddler)\.(?:com|be|org|net)/!i',
         'skipFootnoteLink' => '/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i',
         'hasContent' => '/\S$/',
+        'isNotVisible' => '/display\s*:\s*none/',
     ];
     public $defaultTagsToScore = ['section', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'td', 'pre'];
     // The commented out elements qualify as phrasing content but tend to be
@@ -74,7 +75,7 @@ class Readability implements LoggerAwareInterface
         'numeric-entities' => false,
         // 'preserve-entities' => true,
         'break-before-br' => false,
-        'clean' => true,
+        'clean' => false,
         'output-xhtml' => true,
         'logical-emphasis' => true,
         'show-body-only' => false,
@@ -922,6 +923,14 @@ class Readability implements LoggerAwareInterface
                 continue;
             }
 
+            // Remove invisible nodes
+            if (!$this->isNodeVisible($node)) {
+                $this->logger->debug('Removing invisible node ' . $node->getNodePath());
+                $node->parentNode->removeChild($node);
+                --$nodeIndex;
+                continue;
+            }
+
             // Remove unlikely candidates
             $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
 
@@ -1473,5 +1482,19 @@ class Readability implements LoggerAwareInterface
         });
 
         return 0 === \count($a);
+    }
+
+    /**
+     * Return whether a given node is visible or not.
+     *
+     * Tidy must be configured to not clean the input for this function to
+     * work as expected, see $this->tidy_config['clean']
+     */
+    private function isNodeVisible(\DOMElement $node): bool
+    {
+        return !($node->hasAttribute('style')
+                    && preg_match($this->regexps['isNotVisible'], $node->getAttribute('style'))
+                )
+                && !$node->hasAttribute('hidden');
     }
 }

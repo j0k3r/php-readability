@@ -499,6 +499,48 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertStringContainsString('<a href="alice-I.html">Down the Rabbit-Hole</a>', $readability->getContent()->getInnerHtml());
     }
 
+    public function dataForVisibleNode(): array
+    {
+        return [
+            'visible node' => [
+                '<div>' . str_repeat('<p>This <b>is</b> the awesome and WONDERFUL content :)</p>', 7) . '</div>',
+                true,
+            ],
+            'display=none' => [
+                '<div style="display:none;">' . str_repeat('<p>This <b>is</b> the awesome and WONDERFUL content :)</p>', 7) . '</div>',
+                false,
+            ],
+            'display=inline' => [
+                '<div style="display:inline;">' . str_repeat('<p>This <b>is</b> the awesome and WONDERFUL content :)</p>', 7) . '</div>',
+                true,
+            ],
+            'hidden attribute' => [
+                '<div hidden>' . str_repeat('<p>This <b>is</b> the awesome and WONDERFUL content :)</p>', 7) . '</div>',
+                false,
+            ],
+            'missing display' => [
+                '<div style="color:#ccc;">' . str_repeat('<p>This <b>is</b> the awesome and WONDERFUL content :)</p>', 7) . '</div>',
+                true,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider dataForVisibleNode
+     */
+    public function testVisibleNode(string $content, bool $shouldBeVisible): void
+    {
+        $readability = $this->getReadability($content, 'http://0.0.0.0');
+        $readability->debug = true;
+        $res = $readability->init();
+
+        if ($shouldBeVisible) {
+            $this->assertStringContainsString('WONDERFUL content', $readability->getContent()->getInnerHtml());
+        } else {
+            $this->assertStringNotContainsString('WONDERFUL content', $readability->getContent()->getInnerHtml());
+        }
+    }
+
     private function getReadability(string $html, string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
     {
         $readability = new Readability($html, $url, $parser, $useTidy);
