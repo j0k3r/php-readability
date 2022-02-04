@@ -46,14 +46,27 @@ class Readability implements LoggerAwareInterface
      * Defined up here so we don't instantiate them repeatedly in loops.
      */
     public $regexps = [
-        'unlikelyCandidates' => '/display\s*:\s*none|ignore|\binfos?\b|annoy|clock|date|time|author|intro|hidd?e|about|archive|\bprint|bookmark|tags|tag-list|share|search|social|robot|published|combx|comment|mast(?:head)|subscri|community|category|disqus|extra|head|head(?:er|note)|floor|foot(?:er|note)|menu|tool\b|function|nav|remark|rss|shoutbox|widget|meta|banner|sponsor|adsense|inner-?ad|ad-|sponsor|\badv\b|\bads\b|agr?egate?|pager|sidebar|popup|tweet|twitter/i',
-        'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page|footnote/i',
+        'unlikelyCandidates' => '/-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote/i',
+        'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page|footnote|element/i',
         'positive' => '/read|full|article|body|\bcontent|contain|entry|main|markdown|media|page|attach|pagination|post|text|blog|story/i',
         'negative' => '/bottom|stat|info|discuss|e[\-]?mail|comment|reply|log.{2}(n|ed)|sign|single|combx|com-|contact|_nav|link|media|promo|\bad-|related|scroll|shoutbox|sidebar|sponsor|shopping|teaser|recommend/i',
         'divToPElements' => '/<(?:blockquote|header|section|code|div|article|footer|aside|img|p|pre|dl|ol|ul)/mi',
         'killBreaks' => '/(<br\s*\/?>([ \r\n\s]|&nbsp;?)*)+/',
         'media' => '!//(?:[^\.\?/]+\.)?(?:youtu(?:be)?|giphy|soundcloud|dailymotion|vimeo|pornhub|xvideos|twitvid|rutube|openload\.co|viddler)\.(?:com|be|org|net)/!i',
         'skipFootnoteLink' => '/^\s*(\[?[a-z0-9]{1,2}\]?|^|edit|citation needed)\s*$/i',
+        'hasContent' => '/\S$/',
+        'isNotVisible' => '/display\s*:\s*none/',
+    ];
+    public $defaultTagsToScore = ['section', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'td', 'pre'];
+    // The commented out elements qualify as phrasing content but tend to be
+    // removed by readability when put into paragraphs, so we ignore them here.
+    public $phrasingElements = [
+        // "CANVAS", "IFRAME", "SVG", "VIDEO",
+        'ABBR', 'AUDIO', 'B', 'BDO', 'BR', 'BUTTON', 'CITE', 'CODE', 'DATA',
+        'DATALIST', 'DFN', 'EM', 'EMBED', 'I', 'IMG', 'INPUT', 'KBD', 'LABEL',
+        'MARK', 'MATH', 'METER', 'NOSCRIPT', 'OBJECT', 'OUTPUT', 'PROGRESS', 'Q',
+        'RUBY', 'SAMP', 'SCRIPT', 'SELECT', 'SMALL', 'SPAN', 'STRONG', 'SUB',
+        'SUP', 'TEXTAREA', 'TIME', 'VAR', 'WBR',
     ];
     public $tidy_config = [
         'tidy-mark' => false,
@@ -62,7 +75,7 @@ class Readability implements LoggerAwareInterface
         'numeric-entities' => false,
         // 'preserve-entities' => true,
         'break-before-br' => false,
-        'clean' => true,
+        'clean' => false,
         'output-xhtml' => true,
         'logical-emphasis' => true,
         'show-body-only' => false,
@@ -485,7 +498,7 @@ class Readability implements LoggerAwareInterface
      */
     public function getCommaCount(string $text): int
     {
-        return substr_count($text, ',');
+        return \count(explode(',', $text));
     }
 
     /**
@@ -609,6 +622,9 @@ class Readability implements LoggerAwareInterface
             $contentScore = ($node->hasAttribute('readability')) ? (int) $node->getAttribute('readability') : 0;
             $this->logger->debug('Start conditional cleaning of ' . $node->getNodePath() . ' (class=' . $node->getAttribute('class') . '; id=' . $node->getAttribute('id') . ')' . (($node->hasAttribute('readability')) ? (' with score ' . $node->getAttribute('readability')) : ''));
 
+            // XXX Incomplete implementation
+            $isList = \in_array($node->tagName, ['ul', 'ol'], true);
+
             if ($weight + $contentScore < 0) {
                 $this->logger->debug('Removing...');
                 $node->parentNode->removeChild($node);
@@ -643,16 +659,16 @@ class Readability implements LoggerAwareInterface
                 $toRemove = false;
 
                 if ($this->lightClean) {
-                    if ($li > $p && 'ul' !== $tag && 'ol' !== $tag) {
+                    if (!$isList && $li > $p) {
                         $this->logger->debug(' too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
                         $this->logger->debug(' too many <input> elements');
                         $toRemove = true;
-                    } elseif ($contentLength < 6 && (0 === $embedCount && (0 === $img || $img > 2))) {
+                    } elseif (!$isList && $contentLength < 6 && (0 === $embedCount && (0 === $img || $img > 2))) {
                         $this->logger->debug(' content length less than 6 chars, 0 embeds and either 0 images or more than 2 images');
                         $toRemove = true;
-                    } elseif ($weight < 25 && $linkDensity > 0.25) {
+                    } elseif (!$isList && $weight < 25 && $linkDensity > 0.25) {
                         $this->logger->debug(' weight is ' . $weight . ' < 25 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.25');
                         $toRemove = true;
                     } elseif ($a > 2 && ($weight >= 25 && $linkDensity > 0.5)) {
@@ -666,16 +682,16 @@ class Readability implements LoggerAwareInterface
                     if ($img > $p) {
                         $this->logger->debug(' more image elements than paragraph elements');
                         $toRemove = true;
-                    } elseif ($li > $p && 'ul' !== $tag && 'ol' !== $tag) {
+                    } elseif (!$isList && $li > $p) {
                         $this->logger->debug('  too many <li> elements, and parent is not <ul> or <ol>');
                         $toRemove = true;
                     } elseif ($input > floor($p / 3)) {
                         $this->logger->debug('  too many <input> elements');
                         $toRemove = true;
-                    } elseif ($contentLength < 10 && (0 === $img || $img > 2)) {
+                    } elseif (!$isList && $contentLength < 10 && (0 === $img || $img > 2)) {
                         $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
                         $toRemove = true;
-                    } elseif ($weight < 25 && $linkDensity > 0.2) {
+                    } elseif (!$isList && $weight < 25 && $linkDensity > 0.2) {
                         $this->logger->debug('  weight is ' . $weight . ' lower than 0 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.2');
                         $toRemove = true;
                     } elseif ($weight >= 25 && $linkDensity > 0.5) {
@@ -846,7 +862,7 @@ class Readability implements LoggerAwareInterface
             case 'DD':
             case 'DT':
             case 'LI':
-                $readability->value -= 2 * round($this->getLinkDensity($node), 0, \PHP_ROUND_HALF_UP);
+                $readability->value -= 3;
                 break;
             case 'ASIDE':
             case 'FOOTER':
@@ -907,14 +923,35 @@ class Readability implements LoggerAwareInterface
                 continue;
             }
 
+            // Remove invisible nodes
+            if (!$this->isNodeVisible($node)) {
+                $this->logger->debug('Removing invisible node ' . $node->getNodePath());
+                $node->parentNode->removeChild($node);
+                --$nodeIndex;
+                continue;
+            }
+
+            // Remove unlikely candidates
+            $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
+
+            if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
+                preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
+                !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
+            ) {
+                $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '"');
+                $node->parentNode->removeChild($node);
+                --$nodeIndex;
+                continue;
+            }
+
             // Some well known site uses sections as paragraphs.
-            if (0 === strcasecmp($tagName, 'p') || 0 === strcasecmp($tagName, 'td') || 0 === strcasecmp($tagName, 'pre') || 0 === strcasecmp($tagName, 'section')) {
+            if (\in_array($tagName, $this->defaultTagsToScore, true)) {
                 $nodesToScore[] = $node;
             }
 
             // Turn divs into P tags where they have been used inappropriately
             //  (as in, where they contain no other block level elements).
-            if (0 === strcasecmp($tagName, 'div') || 0 === strcasecmp($tagName, 'article') || 0 === strcasecmp($tagName, 'section')) {
+            if ('div' === $tagName) {
                 if (!preg_match($this->regexps['divToPElements'], $nodeContent)) {
                     $newNode = $this->dom->createElement('p');
 
@@ -929,27 +966,46 @@ class Readability implements LoggerAwareInterface
                     }
                 } else {
                     // Will change these P elements back to text nodes after processing.
-                    for ($i = 0, $il = $node->childNodes->length; $i < $il; ++$i) {
-                        $childNode = $node->childNodes->item($i);
-
-                        // it looks like sometimes the loop is going too far and we are retrieving a non-existant child
-                        if (null === $childNode) {
-                            continue;
-                        }
-
+                    $p = null;
+                    // foreach does not handle removeChild very well
+                    // See https://www.php.net/manual/en/domnode.removechild.php#90292
+                    $childs = iterator_to_array($node->childNodes);
+                    foreach ($childs as $childNode) {
                         // executable tags (<?php or <?xml) warning
-                        if (\is_object($childNode) && 'DOMProcessingInstruction' === \get_class($childNode)) {
+                        if ($childNode instanceof \DOMProcessingInstruction) {
                             $childNode->parentNode->removeChild($childNode);
 
                             continue;
                         }
 
-                        if (\XML_TEXT_NODE === $childNode->nodeType) {
-                            $p = $this->dom->createElement('p');
-                            $p->setInnerHtml($childNode->nodeValue);
-                            $p->setAttribute('data-readability-styled', 'true');
-                            $childNode->parentNode->replaceChild($p, $childNode);
+                        if ($childNode instanceof \DOMText && '' === $this->getInnerText($childNode, true, true)) {
+                            /* $this->logger->debug('Remove empty text node'); */
+                            $childNode->parentNode->removeChild($childNode);
+
+                            continue;
                         }
+
+                        if ($this->isPhrasingContent($childNode)) {
+                            if (null !== $p) {
+                                $p->appendChild($childNode);
+                            } elseif ('' !== $this->getInnerText($childNode, true, true)) {
+                                $p = $this->dom->createElement('p');
+                                $p->setInnerHtml($childNode->nodeValue);
+                                $p->setAttribute('data-readability-styled', 'true');
+                                $childNode->parentNode->replaceChild($p, $childNode);
+                            }
+                        } elseif (null !== $p) {
+                            while ($p->lastChild && '' === $this->getInnerText($p->lastChild, true, true)) {
+                                $p->removeChild($p->lastChild);
+                            }
+                            $p = null;
+                        }
+                    }
+
+                    if ($this->hasSingleTagInsideElement($node, 'p') && $this->getLinkDensity($node) < 0.25) {
+                        $newNode = $node->childNodes->item(0);
+                        $node->parentNode->replaceChild($newNode, $node);
+                        $nodesToScore[] = $newNode;
                     }
                 }
             }
@@ -963,14 +1019,13 @@ class Readability implements LoggerAwareInterface
          * Maybe eventually link density.
          */
         for ($pt = 0, $scored = \count($nodesToScore); $pt < $scored; ++$pt) {
-            $parentNode = $nodesToScore[$pt]->parentNode;
+            $ancestors = $this->getAncestors($nodesToScore[$pt], 5);
 
             // No parent node? Move on...
-            if (!$parentNode) {
+            if (0 === \count($ancestors)) {
                 continue;
             }
 
-            $grandParentNode = $parentNode->parentNode instanceof \DOMElement ? $parentNode->parentNode : null;
             $innerText = $this->getInnerText($nodesToScore[$pt]);
 
             // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
@@ -978,17 +1033,6 @@ class Readability implements LoggerAwareInterface
                 continue;
             }
 
-            // Initialize readability data for the parent.
-            if (!$parentNode->hasAttribute('readability')) {
-                $this->initializeNode($parentNode);
-                $parentNode->setAttribute('data-candidate', 'true');
-            }
-
-            // Initialize readability data for the grandparent.
-            if ($grandParentNode && !$grandParentNode->hasAttribute('readability') && isset($grandParentNode->tagName)) {
-                $this->initializeNode($grandParentNode);
-                $grandParentNode->setAttribute('data-candidate', 'true');
-            }
             // Add a point for the paragraph itself as a base.
             $contentScore = 1;
             // Add points for any commas within this paragraph.
@@ -996,25 +1040,26 @@ class Readability implements LoggerAwareInterface
             // For every SCORE_CHARS_IN_PARAGRAPH (default:100) characters in this paragraph, add another point. Up to 3 points.
             $contentScore += min(floor(mb_strlen($innerText) / self::SCORE_CHARS_IN_PARAGRAPH), 3);
             // For every SCORE_WORDS_IN_PARAGRAPH (default:20) words in this paragraph, add another point. Up to 3 points.
-            $contentScore += min(floor($this->getWordCount($innerText) / self::SCORE_WORDS_IN_PARAGRAPH), 3);
-            /* TEST: For every positive/negative parent tag, add/substract half point. Up to 3 points. *\/
-            $up = $nodesToScore[$pt];
-            $score = 0;
-            while ($up->parentNode instanceof \DOMElement) {
-                $up = $up->parentNode;
-                if (preg_match($this->regexps['positive'], $up->getAttribute('class') . ' ' . $up->getAttribute('id'))) {
-                    $score += 0.5;
-                } elseif (preg_match($this->regexps['negative'], $up->getAttribute('class') . ' ' . $up->getAttribute('id'))) {
-                    $score -= 0.5;
-                }
-            }
-            $score = floor($score);
-            $contentScore += max(min($score, 3), -3);/**/
+            //$contentScore += min(floor($this->getWordCount($innerText) / self::SCORE_WORDS_IN_PARAGRAPH), 3);
 
-            // Add the score to the parent. The grandparent gets half.
-            $parentNode->getAttributeNode('readability')->value = ((float) $parentNode->getAttributeNode('readability')->value) + $contentScore;
-            if ($grandParentNode) {
-                $grandParentNode->getAttributeNode('readability')->value += round($contentScore / self::GRANDPARENT_SCORE_DIVISOR);
+            foreach ($ancestors as $level => $ancestor) {
+                if (!$ancestor->nodeName || !$ancestor->parentNode) {
+                    return;
+                }
+
+                if (!$ancestor->hasAttribute('readability')) {
+                    $this->initializeNode($ancestor);
+                    $ancestor->setAttribute('data-candidate', 'true');
+                }
+
+                if (0 === $level) {
+                    $scoreDivider = 1;
+                } elseif (1 === $level) {
+                    $scoreDivider = 2;
+                } else {
+                    $scoreDivider = $level * 3;
+                }
+                $ancestor->getAttributeNode('readability')->value += $contentScore / $scoreDivider;
             }
         }
 
@@ -1038,18 +1083,6 @@ class Readability implements LoggerAwareInterface
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
-
-                // Remove unlikely candidates
-                $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
-
-                if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
-                    preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
-                    !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
-                ) {
-                    $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
-                    $node->parentNode->removeChild($node);
-                    --$nodeIndex;
-                }
             }
             unset($candidates);
         }
@@ -1058,10 +1091,11 @@ class Readability implements LoggerAwareInterface
          * After we've calculated scores, loop through all of the possible candidate nodes we found
          * and find the one with the highest score.
          */
-        $topCandidate = null;
+        $topCandidates = array_fill(0, 5, null);
         if ($xpath) {
             // Using array of DOMElements after deletion is a path to DOOMElement.
             $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
+            $this->logger->debug('Candidates: ' . $candidates->length);
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $item = $candidates->item($c);
@@ -1072,14 +1106,25 @@ class Readability implements LoggerAwareInterface
                 $readability = $item->getAttributeNode('readability');
                 $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, \PHP_ROUND_HALF_UP);
 
-                if (!$topCandidate || $readability->value > (int) $topCandidate->getAttribute('readability')) {
-                    $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
-                    $topCandidate = $item;
+                for ($t = 0; $t < 5; ++$t) {
+                    $aTopCandidate = $topCandidates[$t];
+
+                    if (!$aTopCandidate || $readability->value > (int) $aTopCandidate->getAttribute('readability')) {
+                        $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
+                        array_splice($topCandidates, $t, 0, [$item]);
+                        if (\count($topCandidates) > 5) {
+                            array_pop($topCandidates);
+                        }
+                        break;
+                    }
                 }
             }
-
-            unset($candidates);
         }
+
+        $topCandidates = array_filter($topCandidates, function ($v, $idx) {
+            return 0 === $idx || null !== $v;
+        }, \ARRAY_FILTER_USE_BOTH);
+        $topCandidate = $topCandidates[0];
 
         /*
          * If we still have no top candidate, just use the body as a last resort.
@@ -1106,6 +1151,59 @@ class Readability implements LoggerAwareInterface
             }
 
             $this->initializeNode($topCandidate);
+        } elseif ($topCandidate) {
+            $alternativeCandidateAncestors = [];
+            foreach ($topCandidates as $candidate) {
+                if ((int) $candidate->getAttribute('readability') / (int) $topCandidate->getAttribute('readability') >= 0.75) {
+                    $ancestors = $this->getAncestors($candidate);
+                    $this->logger->debug('Adding ' . \count($ancestors) . ' alternative ancestors for ' . $candidate->getNodePath());
+                    $alternativeCandidateAncestors[] = $ancestors;
+                }
+            }
+            if (\count($alternativeCandidateAncestors) >= 3) {
+                $parentOfTopCandidate = $topCandidate->parentNode;
+                while ('body' !== $parentOfTopCandidate->nodeName) {
+                    $listsContainingThisAncestor = 0;
+                    for ($ancestorIndex = 0; $ancestorIndex < \count($alternativeCandidateAncestors) && $listsContainingThisAncestor < 3; ++$ancestorIndex) {
+                        $listsContainingThisAncestor += (int) \in_array($parentOfTopCandidate, $alternativeCandidateAncestors[$ancestorIndex], true);
+                    }
+                    if ($listsContainingThisAncestor >= 3) {
+                        $topCandidate = $parentOfTopCandidate;
+                        break;
+                    }
+                    $parentOfTopCandidate = $parentOfTopCandidate->parentNode;
+                }
+            }
+            if (!$topCandidate->hasAttribute('readability')) {
+                $this->initializeNode($topCandidate);
+            }
+            $parentOfTopCandidate = $topCandidate->parentNode;
+            $lastScore = (int) $topCandidate->getAttribute('readability');
+            $scoreThreshold = $lastScore / 3;
+            while ('body' !== $parentOfTopCandidate->nodeName) {
+                if (!$parentOfTopCandidate->hasAttribute('readability')) {
+                    $parentOfTopCandidate = $parentOfTopCandidate->parentNode;
+                    continue;
+                }
+                $parentScore = (int) $parentOfTopCandidate->getAttribute('readability');
+                if ($parentScore < $scoreThreshold) {
+                    break;
+                }
+                if ($parentScore > $lastScore) {
+                    $topCandidate = $parentOfTopCandidate;
+                    break;
+                }
+                $lastScore = (int) $parentOfTopCandidate->getAttribute('readability');
+                $parentOfTopCandidate = $parentOfTopCandidate->parentNode;
+            }
+            $parentOfTopCandidate = $topCandidate->parentNode;
+            while ('body' !== $parentOfTopCandidate->nodeName && 1 === $parentOfTopCandidate->childNodes->length) {
+                $topCandidate = $parentOfTopCandidate;
+                $parentOfTopCandidate = $topCandidate->parentNode;
+            }
+            if (!$topCandidate->hasAttribute('readability')) {
+                $this->initializeNode($topCandidate);
+            }
         }
 
         // Set table as the main node if resulted data is table element.
@@ -1131,7 +1229,8 @@ class Readability implements LoggerAwareInterface
         $articleContent = $this->dom->createElement('div');
         $articleContent->setAttribute('class', 'readability-content');
         $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
-        $siblingNodes = $topCandidate->parentNode->childNodes;
+        $parentOfTopCandidate = $topCandidate->parentNode;
+        $siblingNodes = $parentOfTopCandidate->childNodes;
 
         if (0 === $siblingNodes->length) {
             $siblingNodes = new \stdClass();
@@ -1146,27 +1245,25 @@ class Readability implements LoggerAwareInterface
 
             if ($siblingNode->isSameNode($topCandidate)) {
                 $append = true;
-            }
+            } else {
+                $contentBonus = 0;
 
-            $contentBonus = 0;
+                // Give a bonus if sibling nodes and top candidates have the same classname.
+                if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
+                    $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
+                }
 
-            // Give a bonus if sibling nodes and top candidates have the same classname.
-            if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
-                $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
-            }
-
-            if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
-                $append = true;
-            }
-
-            if (0 === strcasecmp($siblingNodeName, 'p')) {
-                $linkDensity = $this->getLinkDensity($siblingNode);
-                $nodeContent = $this->getInnerText($siblingNode, true, true);
-                $nodeLength = mb_strlen($nodeContent);
-
-                if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
-                    || ($nodeLength < self::MIN_NODE_LENGTH && 0 === (int) $linkDensity && preg_match('/\.( |$)/', $nodeContent))) {
+                if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
                     $append = true;
+                } elseif (0 === strcasecmp($siblingNodeName, 'p')) {
+                    $linkDensity = (int) $this->getLinkDensity($siblingNode);
+                    $nodeContent = $this->getInnerText($siblingNode, true, true);
+                    $nodeLength = mb_strlen($nodeContent);
+
+                    if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
+                        || ($nodeLength < self::MIN_NODE_LENGTH && 0 === $nodeLength && 0 === $linkDensity && preg_match('/\.( |$)/', $nodeContent))) {
+                        $append = true;
+                    }
                 }
             }
 
@@ -1347,5 +1444,57 @@ class Readability implements LoggerAwareInterface
         }
 
         $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
+    }
+
+    private function getAncestors(\DOMElement $node, int $maxDepth = 0): array
+    {
+        $ancestors = [];
+        $i = 0;
+        while ($node->parentNode instanceof \DOMElement) {
+            $ancestors[] = $node->parentNode;
+            if (++$i === $maxDepth) {
+                break;
+            }
+            $node = $node->parentNode;
+        }
+
+        return $ancestors;
+    }
+
+    private function isPhrasingContent($node): bool
+    {
+        return \XML_TEXT_NODE === $node->nodeType
+            || \in_array($node->nodeName, $this->phrasingElements, true)
+            || (\in_array($node->nodeName, ['a', 'del', 'ins'], true) && !\in_array(false, array_map(function ($c) {
+                return $this->isPhrasingContent($c);
+            }, iterator_to_array($node->childNodes)), true));
+    }
+
+    private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
+    {
+        if (1 !== $node->childNodes->length || $node->childNodes->item(0)->nodeName !== $tag) {
+            return false;
+        }
+
+        $a = array_filter(iterator_to_array($node->childNodes), function ($childNode) {
+            return $childNode instanceof \DOMText &&
+                preg_match($this->regexps['hasContent'], $this->getInnerText($childNode));
+        });
+
+        return 0 === \count($a);
+    }
+
+    /**
+     * Return whether a given node is visible or not.
+     *
+     * Tidy must be configured to not clean the input for this function to
+     * work as expected, see $this->tidy_config['clean']
+     */
+    private function isNodeVisible(\DOMElement $node): bool
+    {
+        return !($node->hasAttribute('style')
+                    && preg_match($this->regexps['isNotVisible'], $node->getAttribute('style'))
+                )
+                && !$node->hasAttribute('hidden');
     }
 }
