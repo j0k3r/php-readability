@@ -264,7 +264,11 @@ class Readability implements LoggerAwareInterface
         $overlay->appendChild($innerDiv);
 
         // without tidy the body can (sometimes) be wiped, so re-create it
-        if (!(property_exists($this->body, 'childNodes') && null !== $this->body->childNodes)) {
+        try {
+            if (!(property_exists($this->body, 'childNodes') && null !== $this->body->childNodes)) {
+                $this->body = $this->dom->createElement('body');
+            }
+        } catch (\Exception $e) {
             $this->body = $this->dom->createElement('body');
         }
 
