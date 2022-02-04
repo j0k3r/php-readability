@@ -265,7 +265,7 @@ class Readability implements LoggerAwareInterface
 
         // without tidy the body can (sometimes) be wiped, so re-create it
         try {
-            var_dump($this->body, property_exists($this->body, 'childNodes'), isset($this->body->childNodes));
+            var_dump($this->body, property_exists($this->body, 'childNodes'), isset($this->body->childNodes), $this->body->childNodes);
             if (!(property_exists($this->body, 'childNodes') && null !== $this->body->childNodes)) {
                 $this->body = $this->dom->createElement('body');
             }
