@@ -53,7 +53,7 @@ class JSLikeHTMLElement extends \DOMElement
         }
 
         // first, empty the element
-        if (isset($this->childNodes)) {
+        if (null !== $this->childNodes) {
             for ($x = $this->childNodes->length - 1; $x >= 0; --$x) {
                 $this->removeChild($this->childNodes->item($x));
             }
@@ -114,7 +114,7 @@ class JSLikeHTMLElement extends \DOMElement
         if ('innerHTML' === $name) {
             $inner = '';
 
-            if (isset($this->childNodes)) {
+            if (null !== $this->childNodes) {
                 foreach ($this->childNodes as $child) {
                     $inner .= $this->ownerDocument->saveXML($child);
                 }

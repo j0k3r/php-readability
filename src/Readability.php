@@ -220,7 +220,7 @@ class Readability implements LoggerAwareInterface
     {
         $this->loadHtml();
 
-        if (!isset($this->dom->documentElement)) {
+        if (!(property_exists($this->dom, 'documentElement') && null !== $this->dom->documentElement)) {
             return false;
         }
 
@@ -236,7 +236,7 @@ class Readability implements LoggerAwareInterface
             }
         }
 
-        if ($bodyElems->length > 0 && null === $this->body) {
+        if ($bodyElems->length > 0 && !$this->body instanceof \DOMElement) {
             $this->body = $bodyElems->item(0);
         }
 
@@ -264,7 +264,7 @@ class Readability implements LoggerAwareInterface
         $overlay->appendChild($innerDiv);
 
         // without tidy the body can (sometimes) be wiped, so re-create it
-        if (false === isset($this->body->childNodes)) {
+        if (!(property_exists($this->body, 'childNodes') && null !== $this->body->childNodes)) {
             $this->body = $this->dom->createElement('body');
         }
 
@@ -313,7 +313,7 @@ class Readability implements LoggerAwareInterface
             $refLink = $this->dom->createElement('a');
             $footnote = $this->dom->createElement('li');
             $linkDomain = @parse_url($footnoteLink->getAttribute('href'), \PHP_URL_HOST);
-            if (!$linkDomain && isset($this->url)) {
+            if (!$linkDomain && null !== $this->url) {
                 $linkDomain = @parse_url($this->url, \PHP_URL_HOST);
             }
 
@@ -433,7 +433,7 @@ class Readability implements LoggerAwareInterface
             }
 
             // add extra text to iframe tag to avoid an auto-closing iframe and then break the html code
-            if ($iframeCount) {
+            if (0 !== $iframeCount) {
                 $iframe = $item->getElementsByTagName('iframe');
                 $iframe->item(0)->nodeValue = ' ';
 
@@ -463,7 +463,7 @@ class Readability implements LoggerAwareInterface
      */
     public function getInnerText($e, bool $normalizeSpaces = true, bool $flattenLines = false): string
     {
-        if (null === $e || !isset($e->textContent) || '' === $e->textContent) {
+        if (!$e instanceof \DOMNode || !(property_exists($e, 'textContent') && null !== $e->textContent) || '' === $e->textContent) {
             return '';
         }
 
@@ -679,29 +679,27 @@ class Readability implements LoggerAwareInterface
                         $this->logger->debug(' more than 3 embeds');
                         $toRemove = true;
                     }
-                } else {
-                    if ($img > $p) {
-                        $this->logger->debug(' more image elements than paragraph elements');
-                        $toRemove = true;
-                    } elseif (!$isList && $li > $p) {
-                        $this->logger->debug('  too many <li> elements, and parent is not <ul> or <ol>');
-                        $toRemove = true;
-                    } elseif ($input > floor($p / 3)) {
-                        $this->logger->debug('  too many <input> elements');
-                        $toRemove = true;
-                    } elseif (!$isList && $contentLength < 10 && (0 === $img || $img > 2)) {
-                        $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
-                        $toRemove = true;
-                    } elseif (!$isList && $weight < 25 && $linkDensity > 0.2) {
-                        $this->logger->debug('  weight is ' . $weight . ' lower than 0 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.2');
-                        $toRemove = true;
-                    } elseif ($weight >= 25 && $linkDensity > 0.5) {
-                        $this->logger->debug('  weight above 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
-                        $toRemove = true;
-                    } elseif ((1 === $embedCount && $contentLength < 75) || $embedCount > 1) {
-                        $this->logger->debug('  1 embed and content length smaller than 75 chars, or more than one embed');
-                        $toRemove = true;
-                    }
+                } elseif ($img > $p) {
+                    $this->logger->debug(' more image elements than paragraph elements');
+                    $toRemove = true;
+                } elseif (!$isList && $li > $p) {
+                    $this->logger->debug('  too many <li> elements, and parent is not <ul> or <ol>');
+                    $toRemove = true;
+                } elseif ($input > floor($p / 3)) {
+                    $this->logger->debug('  too many <input> elements');
+                    $toRemove = true;
+                } elseif (!$isList && $contentLength < 10 && (0 === $img || $img > 2)) {
+                    $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
+                    $toRemove = true;
+                } elseif (!$isList && $weight < 25 && $linkDensity > 0.2) {
+                    $this->logger->debug('  weight is ' . $weight . ' lower than 0 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.2');
+                    $toRemove = true;
+                } elseif ($weight >= 25 && $linkDensity > 0.5) {
+                    $this->logger->debug('  weight above 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
+                    $toRemove = true;
+                } elseif ((1 === $embedCount && $contentLength < 75) || $embedCount > 1) {
+                    $this->logger->debug('  1 embed and content length smaller than 75 chars, or more than one embed');
+                    $toRemove = true;
                 }
 
                 if ($toRemove) {
@@ -741,7 +739,7 @@ class Readability implements LoggerAwareInterface
      */
     public function addFlag(int $flag): void
     {
-        $this->flags = $this->flags | $flag;
+        $this->flags |= $flag;
     }
 
     /**
@@ -749,7 +747,7 @@ class Readability implements LoggerAwareInterface
      */
     public function removeFlag(int $flag): void
     {
-        $this->flags = $this->flags & ~$flag;
+        $this->flags &= ~$flag;
     }
 
     /**
@@ -829,7 +827,7 @@ class Readability implements LoggerAwareInterface
      */
     protected function initializeNode(DOMElement $node): void
     {
-        if (!isset($node->tagName)) {
+        if (!(property_exists($node, 'tagName') && null !== $node->tagName)) {
             return;
         }
 
@@ -901,14 +899,14 @@ class Readability implements LoggerAwareInterface
      */
     protected function grabArticle(DOMElement $page = null)
     {
-        if (!$page) {
+        if (null === $page) {
             $page = $this->dom;
         }
 
         $xpath = null;
         $nodesToScore = [];
 
-        if ($page instanceof \DOMDocument && isset($page->documentElement)) {
+        if ($page instanceof \DOMDocument && (property_exists($page, 'documentElement') && null !== $page->documentElement)) {
             $xpath = new \DOMXPath($page);
         }
 
@@ -1019,16 +1017,13 @@ class Readability implements LoggerAwareInterface
          * A score is determined by things like number of commas, class names, etc.
          * Maybe eventually link density.
          */
-        for ($pt = 0, $scored = \count($nodesToScore); $pt < $scored; ++$pt) {
-            $ancestors = $this->getAncestors($nodesToScore[$pt], 5);
-
+        foreach ($nodesToScore as $pt => $singleNodesToScore) {
+            $ancestors = $this->getAncestors($singleNodesToScore, 5);
             // No parent node? Move on...
-            if (0 === \count($ancestors)) {
+            if ([] === $ancestors) {
                 continue;
             }
-
-            $innerText = $this->getInnerText($nodesToScore[$pt]);
-
+            $innerText = $this->getInnerText($singleNodesToScore);
             // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
             if (mb_strlen($innerText) < self::MIN_PARAGRAPH_LENGTH) {
                 continue;
@@ -1074,7 +1069,7 @@ class Readability implements LoggerAwareInterface
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
-                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
+                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && (null !== $node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
                     $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
                 }
@@ -1093,7 +1088,7 @@ class Readability implements LoggerAwareInterface
          * and find the one with the highest score.
          */
         $topCandidates = array_fill(0, 5, null);
-        if ($xpath) {
+        if (null !== $xpath) {
             // Using array of DOMElements after deletion is a path to DOOMElement.
             $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
             $this->logger->debug('Candidates: ' . $candidates->length);
@@ -1135,7 +1130,7 @@ class Readability implements LoggerAwareInterface
             $topCandidate = $this->dom->createElement('div');
 
             if ($page instanceof \DOMDocument) {
-                if (!isset($page->documentElement)) {
+                if (!(property_exists($page, 'documentElement') && null !== $page->documentElement)) {
                     // we don't have a body either? what a mess! :)
                     $this->logger->debug('The page has no body!');
                 } else {
@@ -1165,7 +1160,8 @@ class Readability implements LoggerAwareInterface
                 $parentOfTopCandidate = $topCandidate->parentNode;
                 while ('body' !== $parentOfTopCandidate->nodeName) {
                     $listsContainingThisAncestor = 0;
-                    for ($ancestorIndex = 0; $ancestorIndex < \count($alternativeCandidateAncestors) && $listsContainingThisAncestor < 3; ++$ancestorIndex) {
+                    $alternativeCandidateAncestorsCount = \count($alternativeCandidateAncestors);
+                    for ($ancestorIndex = 0; $ancestorIndex < $alternativeCandidateAncestorsCount && $listsContainingThisAncestor < 3; ++$ancestorIndex) {
                         $listsContainingThisAncestor += (int) \in_array($parentOfTopCandidate, $alternativeCandidateAncestors[$ancestorIndex], true);
                     }
                     if ($listsContainingThisAncestor >= 3) {
@@ -1374,7 +1370,7 @@ class Readability implements LoggerAwareInterface
      */
     protected function reinitBody(): void
     {
-        if (!isset($this->body->childNodes)) {
+        if (!(property_exists($this->body, 'childNodes') && null !== $this->body->childNodes)) {
             $this->body = $this->dom->createElement('body');
             $this->body->setInnerHtml($this->bodyCache);
         }
@@ -1482,7 +1478,7 @@ class Readability implements LoggerAwareInterface
                 preg_match($this->regexps['hasContent'], $this->getInnerText($childNode));
         });
 
-        return 0 === \count($a);
+        return [] === $a;
     }
 
     /**
