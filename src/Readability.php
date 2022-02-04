@@ -2,6 +2,7 @@
 
 namespace Readability;
 
+use DOMElement;
 use Masterminds\HTML5;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -164,7 +165,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get article title element.
      *
-     * @return \DOMElement
+     * @return DOMElement
      */
     public function getTitle()
     {
@@ -174,7 +175,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get article content element.
      *
-     * @return \DOMElement
+     * @return DOMElement
      */
     public function getContent()
     {
@@ -283,7 +284,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Run any post-process modifications to article content as necessary.
      */
-    public function postProcessContent(\DOMElement $articleContent): void
+    public function postProcessContent(DOMElement $articleContent): void
     {
         if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
@@ -295,7 +296,7 @@ class Readability implements LoggerAwareInterface
      *
      * @see http://www.roughtype.com/archives/2010/05/experiments_in.php
      */
-    public function addFootnotes(\DOMElement $articleContent): void
+    public function addFootnotes(DOMElement $articleContent): void
     {
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
@@ -359,7 +360,7 @@ class Readability implements LoggerAwareInterface
      */
     public function prepArticle(\DOMNode $articleContent): void
     {
-        if (!$articleContent instanceof \DOMElement) {
+        if (!$articleContent instanceof DOMElement) {
             return;
         }
 
@@ -456,9 +457,9 @@ class Readability implements LoggerAwareInterface
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
      *
-     * @param \DOMElement $e
-     * @param bool        $normalizeSpaces (default: true)
-     * @param bool        $flattenLines    (default: false)
+     * @param DOMElement $e
+     * @param bool       $normalizeSpaces (default: true)
+     * @param bool       $flattenLines    (default: false)
      */
     public function getInnerText($e, bool $normalizeSpaces = true, bool $flattenLines = false): string
     {
@@ -482,7 +483,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Remove the style attribute on every $e and under.
      */
-    public function cleanStyles(\DOMElement $e): void
+    public function cleanStyles(DOMElement $e): void
     {
         if (\is_object($e)) {
             $elems = $e->getElementsByTagName('*');
@@ -515,7 +516,7 @@ class Readability implements LoggerAwareInterface
      * This is the amount of text that is inside a link divided by the total text in the node.
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
      */
-    public function getLinkDensity(\DOMElement $e, bool $excludeExternal = false): float
+    public function getLinkDensity(DOMElement $e, bool $excludeExternal = false): float
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
@@ -538,7 +539,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get an element relative weight.
      */
-    public function getWeight(\DOMElement $e): int
+    public function getWeight(DOMElement $e): int
     {
         if (!$this->flagIsActive(self::FLAG_WEIGHT_ATTRIBUTES)) {
             return 0;
@@ -556,7 +557,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Remove extraneous break tags from a node.
      */
-    public function killBreaks(\DOMElement $node): void
+    public function killBreaks(DOMElement $node): void
     {
         $html = $node->getInnerHTML();
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
@@ -569,7 +570,7 @@ class Readability implements LoggerAwareInterface
      *
      * Updated 2012-09-18 to preserve youtube/vimeo iframes
      */
-    public function clean(\DOMElement $e, string $tag): void
+    public function clean(DOMElement $e, string $tag): void
     {
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
@@ -601,7 +602,7 @@ class Readability implements LoggerAwareInterface
      * "Fishy" is an algorithm based on content length, classnames,
      * link density, number of images & embeds, etc.
      */
-    public function cleanConditionally(\DOMElement $e, string $tag): void
+    public function cleanConditionally(DOMElement $e, string $tag): void
     {
         if (!$this->flagIsActive(self::FLAG_CLEAN_CONDITIONALLY)) {
             return;
@@ -714,7 +715,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Clean out spurious headers from an Element. Checks things like classnames and link density.
      */
-    public function cleanHeaders(\DOMElement $e): void
+    public function cleanHeaders(DOMElement $e): void
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h' . $headerIndex);
@@ -754,7 +755,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get the article title as an H1.
      *
-     * @return \DOMElement
+     * @return DOMElement
      */
     protected function getArticleTitle()
     {
@@ -826,7 +827,7 @@ class Readability implements LoggerAwareInterface
      * Initialize a node with the readability object. Also checks the
      * className/id for special names to add to its score.
      */
-    protected function initializeNode(\DOMElement $node): void
+    protected function initializeNode(DOMElement $node): void
     {
         if (!isset($node->tagName)) {
             return;
@@ -894,11 +895,11 @@ class Readability implements LoggerAwareInterface
      * Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
      *
-     * @param \DOMElement $page
+     * @param DOMElement $page
      *
-     * @return \DOMElement|false
+     * @return DOMElement|false
      */
-    protected function grabArticle(\DOMElement $page = null)
+    protected function grabArticle(DOMElement $page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -1211,7 +1212,7 @@ class Readability implements LoggerAwareInterface
         if (0 === strcasecmp($tagName, 'td') || 0 === strcasecmp($tagName, 'tr')) {
             $up = $topCandidate;
 
-            if ($up->parentNode instanceof \DOMElement) {
+            if ($up->parentNode instanceof DOMElement) {
                 $up = $up->parentNode;
 
                 if (0 === strcasecmp($up->tagName, 'table')) {
@@ -1340,7 +1341,7 @@ class Readability implements LoggerAwareInterface
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
      */
-    protected function weightAttribute(\DOMElement $element, string $attribute): int
+    protected function weightAttribute(DOMElement $element, string $attribute): int
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1443,14 +1444,14 @@ class Readability implements LoggerAwareInterface
             libxml_use_internal_errors(false);
         }
 
-        $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
+        $this->dom->registerNodeClass(DOMElement::class, \Readability\JSLikeHTMLElement::class);
     }
 
-    private function getAncestors(\DOMElement $node, int $maxDepth = 0): array
+    private function getAncestors(DOMElement $node, int $maxDepth = 0): array
     {
         $ancestors = [];
         $i = 0;
-        while ($node->parentNode instanceof \DOMElement) {
+        while ($node->parentNode instanceof DOMElement) {
             $ancestors[] = $node->parentNode;
             if (++$i === $maxDepth) {
                 break;
@@ -1470,7 +1471,7 @@ class Readability implements LoggerAwareInterface
             }, iterator_to_array($node->childNodes)), true));
     }
 
-    private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
+    private function hasSingleTagInsideElement(DOMElement $node, string $tag): bool
     {
         if (1 !== $node->childNodes->length || $node->childNodes->item(0)->nodeName !== $tag) {
             return false;
@@ -1490,7 +1491,7 @@ class Readability implements LoggerAwareInterface
      * Tidy must be configured to not clean the input for this function to
      * work as expected, see $this->tidy_config['clean']
      */
-    private function isNodeVisible(\DOMElement $node): bool
+    private function isNodeVisible(DOMElement $node): bool
     {
         return !($node->hasAttribute('style')
                     && preg_match($this->regexps['isNotVisible'], $node->getAttribute('style'))
