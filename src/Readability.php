@@ -26,7 +26,7 @@ class Readability implements LoggerAwareInterface
     public const MIN_NODE_LENGTH = 80;
     public const MAX_LINK_DENSITY = 0.25;
     public $convertLinksToFootnotes = false;
-    public $revertForcedParagraphElements = true;
+    public $revertForcedParagraphElements = false;
     public $articleTitle;
     public $articleContent;
     public $original_html;
@@ -991,9 +991,9 @@ class Readability implements LoggerAwareInterface
                                 $p->appendChild($childNode);
                             } elseif ('' !== $this->getInnerText($childNode, true, true)) {
                                 $p = $this->dom->createElement('p');
-                                $p->setInnerHtml($childNode->nodeValue);
                                 $p->setAttribute('data-readability-styled', 'true');
-                                $childNode->parentNode->replaceChild($p, $childNode);
+                                $node->replaceChild($p, $childNode);
+                                $p->appendChild($childNode);
                             }
                         } elseif (null !== $p) {
                             while ($p->lastChild && '' === $this->getInnerText($p->lastChild, true, true)) {
@@ -1465,8 +1465,8 @@ class Readability implements LoggerAwareInterface
     private function isPhrasingContent($node): bool
     {
         return \XML_TEXT_NODE === $node->nodeType
-            || \in_array($node->nodeName, $this->phrasingElements, true)
-            || (\in_array($node->nodeName, ['a', 'del', 'ins'], true) && !\in_array(false, array_map(function ($c) {
+            || \in_array(strtoupper($node->nodeName), $this->phrasingElements, true)
+            || (\in_array(strtoupper($node->nodeName), ['A', 'DEL', 'INS'], true) && !\in_array(false, array_map(function ($c) {
                 return $this->isPhrasingContent($c);
             }, iterator_to_array($node->childNodes)), true));
     }
