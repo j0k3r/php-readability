@@ -137,10 +137,6 @@ class Readability implements LoggerAwareInterface
     protected $useTidy;
     // raw HTML filters
     protected $pre_filters = [
-        // remove obvious scripts
-        '!<script[^>]*>(.*?)</script>!is' => '',
-        // remove obvious styles
-        '!<style[^>]*>(.*?)</style>!is' => '',
         // remove spans as we redefine styles and they're probably special-styled
         '!</?span[^>]*>!is' => '',
         // HACK: firewall-filtered content
@@ -396,6 +392,9 @@ class Readability implements LoggerAwareInterface
         }
 
         $this->logger->debug($this->lightClean ? 'Light clean enabled.' : 'Standard clean enabled.');
+
+        $this->clean($articleContent, 'style');
+        $this->clean($articleContent, 'script');
 
         $this->cleanStyles($articleContent);
         $this->killBreaks($articleContent);
