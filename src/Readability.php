@@ -1426,7 +1426,7 @@ class Readability implements LoggerAwareInterface
             unset($tidy);
         }
 
-        $this->html = mb_convert_encoding((string) $this->html, 'HTML-ENTITIES', 'UTF-8');
+        $this->html = '<meta charset="utf-8">' . (string) $this->html;
 
         if ('html5lib' === $this->parser || 'html5' === $this->parser) {
             $this->dom = (new HTML5())->loadHTML($this->html);

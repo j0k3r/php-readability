@@ -79,14 +79,13 @@ class JSLikeHTMLElement extends \DOMElement
         } else {
             // $value is probably ill-formed
             $f = new \DOMDocument();
-            $value = mb_convert_encoding($value, 'HTML-ENTITIES', 'UTF-8');
 
             // Using <htmlfragment> will generate a warning, but so will bad HTML
             // (and by this point, bad HTML is what we've got).
             // We use it (and suppress the warning) because an HTML fragment will
             // be wrapped around <html><body> tags which we don't really want to keep.
             // Note: despite the warning, if loadHTML succeeds it will return true.
-            $result = $f->loadHTML('<htmlfragment>' . $value . '</htmlfragment>');
+            $result = $f->loadHTML('<meta charset="utf-8"><htmlfragment>' . $value . '</htmlfragment>');
 
             if ($result) {
                 $import = $f->getElementsByTagName('htmlfragment')->item(0);
