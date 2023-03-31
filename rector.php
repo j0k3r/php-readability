@@ -20,7 +20,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $parameters->set(Option::PHPSTAN_FOR_RECTOR_PATH, __DIR__ . '/phpstan.neon');
 
     $parameters->set(Option::BOOTSTRAP_FILES, [
-        __DIR__ . '/vendor/bin/.phpunit/phpunit-8.5-0/vendor/autoload.php',
+        __DIR__ . '/vendor/bin/.phpunit/phpunit/vendor/autoload.php',
         __DIR__ . '/vendor/autoload.php',
     ]);
 
