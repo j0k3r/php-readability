@@ -24,7 +24,7 @@
         "role": "Developer (original JS version)"
     }],
     "require": {
-        "php": ">=7.2.0",
+        "php": ">=7.4.0",
         "ext-mbstring": "*",
         "psr/log": "^1.0.1 || ^2.0 || ^3.0",
         "masterminds/html5": "^2.7"
