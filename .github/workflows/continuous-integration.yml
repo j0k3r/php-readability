@@ -99,7 +99,7 @@ jobs:
         run: "php vendor/bin/simple-phpunit -v --coverage-clover build/logs/clover.xml"
 
       - name: "Retrieve Coveralls phar"
-        run: "wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.4.2/php-coveralls.phar"
+        run: "wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.7.0/php-coveralls.phar"
 
       - name: "Enable Coveralls phar"
         run: "chmod +x php-coveralls.phar"
