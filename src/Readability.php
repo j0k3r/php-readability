@@ -24,26 +24,36 @@ class Readability implements LoggerAwareInterface
     public const MIN_ARTICLE_LENGTH = 200;
     public const MIN_NODE_LENGTH = 80;
     public const MAX_LINK_DENSITY = 0.25;
-    public $convertLinksToFootnotes = false;
-    public $revertForcedParagraphElements = false;
-    public $articleTitle;
-    public $articleContent;
-    public $original_html;
-    /**
-     * @var \DOMDocument
-     */
-    public $dom;
-    // optional - URL where HTML was retrieved
-    public $url = null;
-    // preserves more content (experimental)
-    public $lightClean = true;
-    public $tidied = false;
+
+    public bool $convertLinksToFootnotes = false;
+    public bool $revertForcedParagraphElements = false;
+
+    public ?\DOMElement $articleTitle;
+
+    public ?\DOMElement $articleContent;
+
+    public ?string $original_html;
+
+    public ?\DOMDocument $dom;
 
     /**
-     * All of the regular expressions in use within readability.
+     * @var ?string URL where HTML was retrieved
+     */
+    public ?string $url = null;
+
+    /**
+     * @var bool preserves more content (experimental)
+     */
+    public bool $lightClean = true;
+
+    public bool $tidied = false;
+
+    /**
+     * @var array<string, string> All of the regular expressions in use within readability.
+     *
      * Defined up here so we don't instantiate them repeatedly in loops.
      */
-    public $regexps = [
+    public array $regexps = [
         'unlikelyCandidates' => '/-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote/i',
         'okMaybeItsACandidate' => '/article\b|contain|\bcontent|column|general|detail|shadow|lightbox|blog|body|entry|main|page|footnote|element/i',
         'positive' => '/read|full|article|body|\bcontent|contain|entry|main|markdown|media|page|attach|pagination|post|text|blog|story/i',
@@ -55,10 +65,18 @@ class Readability implements LoggerAwareInterface
         'hasContent' => '/\S$/',
         'isNotVisible' => '/display\s*:\s*none/',
     ];
-    public $defaultTagsToScore = ['section', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'td', 'pre'];
-    // The commented out elements qualify as phrasing content but tend to be
-    // removed by readability when put into paragraphs, so we ignore them here.
-    public $phrasingElements = [
+
+    /**
+     * @var array<string>
+     */
+    public array $defaultTagsToScore = ['section', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'td', 'pre'];
+
+    /**
+     * @var array<string>
+     */
+    public array $phrasingElements = [
+        // The commented out elements qualify as phrasing content but tend to be
+        // removed by readability when put into paragraphs, so we ignore them here.
         // "CANVAS", "IFRAME", "SVG", "VIDEO",
         'ABBR', 'AUDIO', 'B', 'BDO', 'BR', 'BUTTON', 'CITE', 'CODE', 'DATA',
         'DATALIST', 'DFN', 'EM', 'EMBED', 'I', 'IMG', 'INPUT', 'KBD', 'LABEL',
@@ -66,7 +84,11 @@ class Readability implements LoggerAwareInterface
         'RUBY', 'SAMP', 'SCRIPT', 'SELECT', 'SMALL', 'SPAN', 'STRONG', 'SUB',
         'SUP', 'TEXTAREA', 'TIME', 'VAR', 'WBR',
     ];
-    public $tidy_config = [
+
+    /**
+     * @var array<string, bool|string>
+     */
+    public array $tidy_config = [
         'tidy-mark' => false,
         'vertical-space' => false,
         'doctype' => 'omit',
@@ -90,21 +112,41 @@ class Readability implements LoggerAwareInterface
         'output-encoding' => 'utf8',
         'hide-comments' => true,
     ];
-    // article domain regexp for calibration
-    protected $domainRegExp = null;
-    protected $body = null;
-    // Cache the body HTML in case we need to re-use it later
-    protected $bodyCache = null;
-    // 1 | 2 | 4;   // Start with all processing flags set.
-    protected $flags = 7;
-    // indicates whether we were able to extract or not
-    protected $success = false;
-    protected $logger;
-    protected $parser;
-    protected $html;
-    protected $useTidy;
-    // raw HTML filters
-    protected $pre_filters = [
+
+    /**
+     * @var ?string article domain regexp for calibration
+     */
+    protected ?string $domainRegExp = null;
+
+    protected ?\DOMElement $body = null;
+
+    /**
+     * @var ?string Cache the body HTML in case we need to re-use it later
+     */
+    protected ?string $bodyCache = null;
+
+    /**
+     * @var int-mask-of<self::FLAG_*> start with all processing flags set
+     */
+    protected int $flags = self::FLAG_STRIP_UNLIKELYS | self::FLAG_WEIGHT_ATTRIBUTES | self::FLAG_CLEAN_CONDITIONALLY;
+
+    /**
+     * @var bool indicates whether we were able to extract or not
+     */
+    protected bool $success = false;
+
+    protected LoggerInterface $logger;
+
+    protected string $parser;
+
+    protected string $html;
+
+    protected bool $useTidy;
+
+    /**
+     * @var array<string, string> raw HTML filters
+     */
+    protected array $pre_filters = [
         // remove spans as we redefine styles and they're probably special-styled
         '!</?span[^>]*>!is' => '',
         // HACK: firewall-filtered content
@@ -116,8 +158,11 @@ class Readability implements LoggerAwareInterface
         // replace fonts to spans
         '!<(/?)font[^>]*>!is' => '<\\1span>',
     ];
-    // output HTML filters
-    protected $post_filters = [
+
+    /**
+     * @var array<string, string> output HTML filters
+     */
+    protected array $post_filters = [
         // replace excessive br's
         '/<br\s*\/?>\s*<p/i' => '<p',
         // replace empty tags that break layouts
@@ -157,20 +202,16 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Get article title element.
-     *
-     * @return \DOMElement
      */
-    public function getTitle()
+    public function getTitle(): \DOMElement
     {
         return $this->articleTitle;
     }
 
     /**
      * Get article content element.
-     *
-     * @return \DOMElement
      */
-    public function getContent()
+    public function getContent(): \DOMElement
     {
         return $this->articleContent;
     }
@@ -452,12 +493,8 @@ class Readability implements LoggerAwareInterface
     /**
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
-     *
-     * @param \DOMElement $e
-     * @param bool        $normalizeSpaces (default: true)
-     * @param bool        $flattenLines    (default: false)
      */
-    public function getInnerText($e, bool $normalizeSpaces = true, bool $flattenLines = false): string
+    public function getInnerText(?\DOMNode $e, bool $normalizeSpaces = true, bool $flattenLines = false): string
     {
         if (null === $e || !isset($e->textContent) || '' === $e->textContent) {
             return '';
@@ -750,10 +787,8 @@ class Readability implements LoggerAwareInterface
 
     /**
      * Get the article title as an H1.
-     *
-     * @return \DOMElement
      */
-    protected function getArticleTitle()
+    protected function getArticleTitle(): \DOMElement
     {
         try {
             $curTitle = $origTitle = $this->getInnerText($this->dom->getElementsByTagName('title')->item(0));

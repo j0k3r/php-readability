@@ -10,10 +10,8 @@ use Readability\Readability;
 
 class ReadabilityTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var TestHandler */
-    public $logHandler;
-    /** @var LoggerInterface */
-    public $logger;
+    public TestHandler $logHandler;
+    public LoggerInterface $logger;
 
     /**
      * @requires extension tidy
@@ -323,7 +321,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $oldErrorReporting = error_reporting(\E_ALL | \E_STRICT);
         $oldDisplayErrors = ini_set('display_errors', '1');
         // dummy function to be used to the next test
-        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline, array $errcontext) {
+        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline, array $errcontext): bool {
             throw new \Exception($errstr, $errno);
         }, \E_ALL | \E_STRICT);
 
