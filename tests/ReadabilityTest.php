@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Readability;
 
 use Monolog\Handler\TestHandler;

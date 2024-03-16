@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Readability;
 
 use Masterminds\HTML5;

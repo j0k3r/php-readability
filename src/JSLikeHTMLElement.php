@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // SPDX-FileCopyrightText: 2011 Keyvan Minoukadeh - http://www.keyvan.net - keyvan@keyvan.net
 // SPDX-License-Identifier: Apache-2.0
 
