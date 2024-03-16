@@ -37,8 +37,6 @@ class Readability implements LoggerAwareInterface
     public $url = null;
     // preserves more content (experimental)
     public $lightClean = true;
-    // no more used, keept to avoid BC
-    public $debug = false;
     public $tidied = false;
 
     /**
