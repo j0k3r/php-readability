@@ -28,9 +28,9 @@ class Readability implements LoggerAwareInterface
     public bool $convertLinksToFootnotes = false;
     public bool $revertForcedParagraphElements = false;
 
-    public ?\DOMElement $articleTitle;
+    public ?JSLikeHTMLElement $articleTitle;
 
-    public ?\DOMElement $articleContent;
+    public ?JSLikeHTMLElement $articleContent;
 
     public ?string $original_html;
 
@@ -203,7 +203,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get article title element.
      */
-    public function getTitle(): \DOMElement
+    public function getTitle(): JSLikeHTMLElement
     {
         return $this->articleTitle;
     }
@@ -211,7 +211,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get article content element.
      */
-    public function getContent(): \DOMElement
+    public function getContent(): JSLikeHTMLElement
     {
         return $this->articleContent;
     }
@@ -394,7 +394,7 @@ class Readability implements LoggerAwareInterface
      */
     public function prepArticle(\DOMNode $articleContent): void
     {
-        if (!$articleContent instanceof \DOMElement) {
+        if (!$articleContent instanceof JSLikeHTMLElement) {
             return;
         }
 
@@ -590,7 +590,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Remove extraneous break tags from a node.
      */
-    public function killBreaks(\DOMElement $node): void
+    public function killBreaks(JSLikeHTMLElement $node): void
     {
         $html = $node->getInnerHTML();
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
