@@ -1231,11 +1231,6 @@ class Readability implements LoggerAwareInterface
         $parentOfTopCandidate = $topCandidate->parentNode;
         $siblingNodes = $parentOfTopCandidate->childNodes;
 
-        if (0 === $siblingNodes->length) {
-            $siblingNodes = new \stdClass();
-            $siblingNodes->length = 0;
-        }
-
         for ($s = 0, $sl = $siblingNodes->length; $s < $sl; ++$s) {
             $siblingNode = $siblingNodes->item($s);
             $siblingNodeName = $siblingNode->nodeName;
