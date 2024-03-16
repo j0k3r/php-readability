@@ -16,7 +16,7 @@ env:
 jobs:
   coding-standards:
     name: "CS Fixer & PHPStan"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
 
     strategy:
       matrix:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v2"
+        uses: "actions/checkout@v4"
 
       - name: "Install PHP"
         uses: "shivammathur/setup-php@v2"
@@ -41,7 +41,7 @@ jobs:
         run: "composer require phpstan/phpstan phpstan/phpstan-phpunit --dev --no-progress --no-suggest"
 
       - name: "Install dependencies with Composer"
-        uses: "ramsey/composer-install@v1"
+        uses: "ramsey/composer-install@v3"
         with:
           composer-options: "--optimize-autoloader --prefer-dist"
 
