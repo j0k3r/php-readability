@@ -8,6 +8,9 @@ parameters:
     bootstrapFiles:
         - vendor/bin/.phpunit/phpunit/vendor/autoload.php
 
+    stubFiles:
+        - stubs/dom.stub
+
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon

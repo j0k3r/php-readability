@@ -36,12 +36,12 @@ class Readability implements LoggerAwareInterface
     public $revertForcedParagraphElements = false;
 
     /**
-     * @var ?\DOMElement
+     * @var ?JSLikeHTMLElement
      */
     public $articleTitle;
 
     /**
-     * @var ?\DOMElement
+     * @var ?JSLikeHTMLElement
      */
     public $articleContent;
 
@@ -245,7 +245,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get article title element.
      *
-     * @return \DOMElement
+     * @return JSLikeHTMLElement
      */
     public function getTitle()
     {
@@ -259,7 +259,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get article content element.
      *
-     * @return \DOMElement
+     * @return JSLikeHTMLElement
      */
     public function getContent()
     {
@@ -447,7 +447,7 @@ class Readability implements LoggerAwareInterface
      */
     public function prepArticle(\DOMNode $articleContent): void
     {
-        if (!$articleContent instanceof \DOMElement) {
+        if (!$articleContent instanceof JSLikeHTMLElement) {
             return;
         }
 
@@ -474,7 +474,7 @@ class Readability implements LoggerAwareInterface
         }
 
         // Remove service data-candidate attribute.
-        /** @var \DOMNodeList<\DOMElement> */
+        /** @var \DOMNodeList<JSLikeHTMLElement> */
         $elems = $xpath->query('.//*[@data-candidate]', $articleContent);
         foreach ($elems as $elem) {
             $elem->removeAttribute('data-candidate');
@@ -645,7 +645,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Remove extraneous break tags from a node.
      */
-    public function killBreaks(\DOMElement $node): void
+    public function killBreaks(JSLikeHTMLElement $node): void
     {
         $html = $node->getInnerHTML();
         $html = preg_replace($this->regexps['killBreaks'], '<br />', $html);
@@ -1160,7 +1160,7 @@ class Readability implements LoggerAwareInterface
          * This is faster to do before scoring but safer after.
          */
         if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
-            /** @var \DOMNodeList<\DOMElement> */
+            /** @var \DOMNodeList<JSLikeHTMLElement> */
             $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
@@ -1182,7 +1182,7 @@ class Readability implements LoggerAwareInterface
         $topCandidates = array_fill(0, 5, null);
         if ($xpath) {
             // Using array of DOMElements after deletion is a path to DOOMElement.
-            /** @var \DOMNodeList<\DOMElement> */
+            /** @var \DOMNodeList<JSLikeHTMLElement> */
             $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
             $this->logger->debug('Candidates: ' . $candidates->length);
 
