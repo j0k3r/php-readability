@@ -1166,7 +1166,7 @@ class Readability implements LoggerAwareInterface
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
-                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
+                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode instanceof \DOMElement ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
                     $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . self::getContentScore($node));
                     $node->parentNode->removeChild($node);
                 }
@@ -1209,6 +1209,7 @@ class Readability implements LoggerAwareInterface
             }
         }
 
+        /** @var \DOMNodeList<\DOMElement> */
         $topCandidates = array_filter(
             $topCandidates,
             fn ($v, $idx) => 0 === $idx || null !== $v,
@@ -1326,7 +1327,7 @@ class Readability implements LoggerAwareInterface
             $siblingNode = $siblingNodes->item($s);
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
-            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . ((\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
+            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . (($siblingNode instanceof \DOMElement && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
 
             if ($siblingNode->isSameNode($topCandidate)) {
                 $append = true;
@@ -1334,11 +1335,11 @@ class Readability implements LoggerAwareInterface
                 $contentBonus = 0;
 
                 // Give a bonus if sibling nodes and top candidates have the same classname.
-                if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
+                if ($siblingNode instanceof \DOMElement && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
                     $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
                 }
 
-                if (\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
+                if ($siblingNode instanceof \DOMElement && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
                     $append = true;
                 } elseif (0 === strcasecmp($siblingNodeName, 'p')) {
                     $linkDensity = (int) $this->getLinkDensity($siblingNode);
@@ -1568,7 +1569,7 @@ class Readability implements LoggerAwareInterface
 
     private function isPhrasingContent($node): bool
     {
-        return \XML_TEXT_NODE === $node->nodeType
+        return $node instanceof \DOMText
             || \in_array(strtoupper($node->nodeName), $this->phrasingElements, true)
             || (
                 \in_array(strtoupper($node->nodeName), ['A', 'DEL', 'INS'], true)
