@@ -1120,9 +1120,7 @@ class Readability implements LoggerAwareInterface
 
         $topCandidates = array_filter(
             $topCandidates,
-            function ($v, $idx) {
-                return 0 === $idx || null !== $v;
-            },
+            fn ($v, $idx) => 0 === $idx || null !== $v,
             \ARRAY_FILTER_USE_BOTH
         );
         $topCandidate = $topCandidates[0];
@@ -1471,9 +1469,7 @@ class Readability implements LoggerAwareInterface
                 && !\in_array(
                     false,
                     array_map(
-                        function ($c) {
-                            return $this->isPhrasingContent($c);
-                        },
+                        fn ($c) => $this->isPhrasingContent($c),
                         iterator_to_array($node->childNodes)
                     ),
                     true
@@ -1489,9 +1485,7 @@ class Readability implements LoggerAwareInterface
 
         $a = array_filter(
             iterator_to_array($node->childNodes),
-            function ($childNode) {
-                return $childNode instanceof \DOMText && preg_match($this->regexps['hasContent'], $this->getInnerText($childNode));
-            }
+            fn ($childNode) => $childNode instanceof \DOMText && preg_match($this->regexps['hasContent'], $this->getInnerText($childNode))
         );
 
         return 0 === \count($a);
