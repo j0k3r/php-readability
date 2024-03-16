@@ -618,7 +618,7 @@ class Readability implements LoggerAwareInterface
         for ($i = $curTagsLength - 1; $i >= 0; --$i) {
             $node = $tagsList->item($i);
             $weight = $this->getWeight($node);
-            $contentScore = ($node->hasAttribute('readability')) ? (int) $node->getAttribute('readability') : 0;
+            $contentScore = self::getContentScore($node);
             $this->logger->debug('Start conditional cleaning of ' . $node->getNodePath() . ' (class=' . $node->getAttribute('class') . '; id=' . $node->getAttribute('id') . ')' . (($node->hasAttribute('readability')) ? (' with score ' . $node->getAttribute('readability')) : ''));
 
             // XXX Incomplete implementation
@@ -834,29 +834,26 @@ class Readability implements LoggerAwareInterface
             return;
         }
 
-        $readability = $this->dom->createAttribute('readability');
-        // this is our contentScore
-        $readability->value = 0;
-        $node->setAttributeNode($readability);
+        $contentScore = 0;
 
         // using strtoupper just in case
         switch (strtoupper($node->tagName)) {
             case 'ARTICLE':
-                $readability->value += 15;
+                $contentScore += 15;
                 // no break
             case 'DIV':
-                $readability->value += 5;
+                $contentScore += 5;
                 break;
             case 'PRE':
             case 'CODE':
             case 'TD':
             case 'BLOCKQUOTE':
             case 'FIGURE':
-                $readability->value += 3;
+                $contentScore += 3;
                 break;
             case 'SECTION':
                 // often misused
-                // $readability->value += 2;
+                // $contentScore += 2;
                 break;
             case 'OL':
             case 'UL':
@@ -864,7 +861,7 @@ class Readability implements LoggerAwareInterface
             case 'DD':
             case 'DT':
             case 'LI':
-                $readability->value -= 3;
+                $contentScore -= 3;
                 break;
             case 'ASIDE':
             case 'FOOTER':
@@ -875,7 +872,7 @@ class Readability implements LoggerAwareInterface
             case 'TEXTAREA':
             case 'INPUT':
             case 'NAV':
-                $readability->value -= 3;
+                $contentScore -= 3;
                 break;
             case 'H1':
             case 'H2':
@@ -885,11 +882,15 @@ class Readability implements LoggerAwareInterface
             case 'H6':
             case 'TH':
             case 'HGROUP':
-                $readability->value -= 5;
+                $contentScore -= 5;
                 break;
         }
 
-        $readability->value += $this->getWeight($node);
+        $contentScore += $this->getWeight($node);
+
+        $readability = $this->dom->createAttribute('readability');
+        $readability->value = (string) $contentScore;
+        $node->setAttributeNode($readability);
     }
 
     /**
@@ -1059,7 +1060,8 @@ class Readability implements LoggerAwareInterface
                 } else {
                     $scoreDivider = $level * 3;
                 }
-                $ancestor->getAttributeNode('readability')->value += $contentScore / $scoreDivider;
+
+                self::updateContentScore($ancestor, fn ($prevScore) => $prevScore + $contentScore / $scoreDivider);
             }
         }
 
@@ -1074,7 +1076,7 @@ class Readability implements LoggerAwareInterface
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
-                    $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
+                    $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . self::getContentScore($node));
                     $node->parentNode->removeChild($node);
                 }
             }
@@ -1098,14 +1100,13 @@ class Readability implements LoggerAwareInterface
                 // Scale the final candidates score based on link density. Good content should have a
                 // relatively small link density (5% or less) and be mostly unaffected by this operation.
                 // If not for this we would have used XPath to find maximum @readability.
-                $readability = $item->getAttributeNode('readability');
-                $readability->value = round($readability->value * (1 - $this->getLinkDensity($item)), 0, \PHP_ROUND_HALF_UP);
+                self::updateContentScore($item, fn ($prevScore) => round($prevScore * (1 - $this->getLinkDensity($item)), 0, \PHP_ROUND_HALF_UP));
 
                 for ($t = 0; $t < 5; ++$t) {
                     $aTopCandidate = $topCandidates[$t];
 
-                    if (!$aTopCandidate || $readability->value > (int) $aTopCandidate->getAttribute('readability')) {
-                        $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . $readability->value);
+                    if (!$aTopCandidate || self::getContentScore($item) > self::getContentScore($aTopCandidate)) {
+                        $this->logger->debug('Candidate: ' . $item->getNodePath() . ' (' . $item->getAttribute('class') . ':' . $item->getAttribute('id') . ') with score ' . self::getContentScore($item));
                         array_splice($topCandidates, $t, 0, [$item]);
                         if (\count($topCandidates) > 5) {
                             array_pop($topCandidates);
@@ -1369,6 +1370,26 @@ class Readability implements LoggerAwareInterface
             $this->body = $this->dom->createElement('body');
             $this->body->setInnerHtml($this->bodyCache);
         }
+    }
+
+    /**
+     * Updates the content score for the given element using the provided function.
+     *
+     * @param callable(float): float $f
+     */
+    private static function updateContentScore(\DOMElement $element, callable $f): void
+    {
+        $readabilityAttr = $element->getAttributeNode('readability');
+        $prevScore = (float) $readabilityAttr->value;
+        $readabilityAttr->value = (string) $f($prevScore);
+    }
+
+    /**
+     * Gets the content score for given element.
+     */
+    private static function getContentScore(\DOMElement $element): float
+    {
+        return $element->hasAttribute('readability') ? (float) $element->getAttribute('readability') : 0;
     }
 
     /**
