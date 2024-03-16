@@ -1039,7 +1039,7 @@ class Readability implements LoggerAwareInterface
 
             foreach ($ancestors as $level => $ancestor) {
                 if (!$ancestor->nodeName || !$ancestor->parentNode) {
-                    return;
+                    return false;
                 }
 
                 if (!$ancestor->hasAttribute('readability')) {
