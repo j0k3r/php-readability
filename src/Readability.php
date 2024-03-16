@@ -302,8 +302,7 @@ class Readability implements LoggerAwareInterface
         $articleLinks = $articleContent->getElementsByTagName('a');
         $linkCount = 0;
 
-        for ($i = 0; $i < $articleLinks->length; ++$i) {
-            $articleLink = $articleLinks->item($i);
+        foreach ($articleLinks as $articleLink) {
             $footnoteLink = $articleLink->cloneNode(true);
             $refLink = $this->dom->createElement('a');
             $footnote = $this->dom->createElement('li');
@@ -383,8 +382,8 @@ class Readability implements LoggerAwareInterface
 
         // Remove service data-candidate attribute.
         $elems = $xpath->query('.//*[@data-candidate]', $articleContent);
-        for ($i = $elems->length - 1; $i >= 0; --$i) {
-            $elems->item($i)->removeAttribute('data-candidate');
+        foreach ($elems as $elem) {
+            $elem->removeAttribute('data-candidate');
         }
 
         // Clean out junk from the article content.
@@ -520,11 +519,12 @@ class Readability implements LoggerAwareInterface
         $textLength = mb_strlen($this->getInnerText($e, true, true));
         $linkLength = 0;
 
-        for ($dRe = $this->domainRegExp, $i = 0, $il = $links->length; $i < $il; ++$i) {
-            if ($excludeExternal && $dRe && !preg_match($dRe, $links->item($i)->getAttribute('href'))) {
+        $dRe = $this->domainRegExp;
+        foreach ($links as $link) {
+            if ($excludeExternal && $dRe && !preg_match($dRe, $link->getAttribute('href'))) {
                 continue;
             }
-            $linkLength += mb_strlen($this->getInnerText($links->item($i)));
+            $linkLength += mb_strlen($this->getInnerText($link));
         }
 
         if ($textLength > 0 && $linkLength > 0) {
@@ -640,15 +640,15 @@ class Readability implements LoggerAwareInterface
                 $embedCount = 0;
                 $embeds = $node->getElementsByTagName('embed');
 
-                for ($ei = 0, $il = $embeds->length; $ei < $il; ++$ei) {
-                    if (preg_match($this->regexps['media'], $embeds->item($ei)->getAttribute('src'))) {
+                foreach ($embeds as $embed) {
+                    if (preg_match($this->regexps['media'], $embed->getAttribute('src'))) {
                         ++$embedCount;
                     }
                 }
 
                 $embeds = $node->getElementsByTagName('iframe');
-                for ($ei = 0, $il = $embeds->length; $ei < $il; ++$ei) {
-                    if (preg_match($this->regexps['media'], $embeds->item($ei)->getAttribute('src'))) {
+                foreach ($embeds as $embed) {
+                    if (preg_match($this->regexps['media'], $embed->getAttribute('src'))) {
                         ++$embedCount;
                     }
                 }
@@ -1018,15 +1018,15 @@ class Readability implements LoggerAwareInterface
          * A score is determined by things like number of commas, class names, etc.
          * Maybe eventually link density.
          */
-        for ($pt = 0, $scored = \count($nodesToScore); $pt < $scored; ++$pt) {
-            $ancestors = $this->getAncestors($nodesToScore[$pt], 5);
+        foreach ($nodesToScore as $nodeToScore) {
+            $ancestors = $this->getAncestors($nodeToScore, 5);
 
             // No parent node? Move on...
             if (0 === \count($ancestors)) {
                 continue;
             }
 
-            $innerText = $this->getInnerText($nodesToScore[$pt]);
+            $innerText = $this->getInnerText($nodeToScore);
 
             // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
             if (mb_strlen($innerText) < self::MIN_PARAGRAPH_LENGTH) {
