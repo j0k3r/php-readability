@@ -14,7 +14,7 @@ env:
 jobs:
   phpunit:
     name: "PHPUnit (PHP ${{ matrix.php }})"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
 
     strategy:
       matrix:
@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           fetch-depth: 2
 
@@ -48,7 +48,7 @@ jobs:
         run: "composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update"
 
       - name: "Install dependencies with Composer"
-        uses: "ramsey/composer-install@v2"
+        uses: "ramsey/composer-install@v3"
         with:
           composer-options: "--optimize-autoloader --prefer-dist"
 
@@ -60,7 +60,7 @@ jobs:
 
   phpunit-coverage:
     name: "PHPUnit coverage (PHP ${{ matrix.php }})"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
 
     strategy:
       matrix:
@@ -69,7 +69,7 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           fetch-depth: 2
 
@@ -88,7 +88,7 @@ jobs:
         run: "composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update"
 
       - name: "Install dependencies with Composer"
-        uses: "ramsey/composer-install@v2"
+        uses: "ramsey/composer-install@v3"
         with:
           composer-options: "--optimize-autoloader --prefer-dist"
 
@@ -111,7 +111,7 @@ jobs:
 
   phpunit-lowest:
     name: "PHPUnit lowest deps (PHP ${{ matrix.php }})"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
 
     strategy:
       matrix:
@@ -120,7 +120,7 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           fetch-depth: 2
 
@@ -139,7 +139,7 @@ jobs:
         run: "composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update"
 
       - name: "Install dependencies with Composer"
-        uses: "ramsey/composer-install@v2"
+        uses: "ramsey/composer-install@v3"
         with:
           composer-options: "--optimize-autoloader --prefer-dist"
           dependency-versions: "lowest"
