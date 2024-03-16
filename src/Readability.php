@@ -144,7 +144,7 @@ class Readability implements LoggerAwareInterface
         // HACK: replace linebreaks plus br's with p's
         '!(<br[^>]*>[ \r\n\s]*){2,}!i' => '</p><p>',
         // replace noscripts
-        //'!</?noscript>!is' => '',
+        // '!</?noscript>!is' => '',
         // replace fonts to spans
         '!<(/?)font[^>]*>!is' => '<\\1span>',
     ];
@@ -155,8 +155,8 @@ class Readability implements LoggerAwareInterface
         // replace empty tags that break layouts
         '!<(?:a|div|p|figure)[^>]+/>!is' => '',
         // remove all attributes on text tags
-        //'!<(\s*/?\s*(?:blockquote|br|hr|code|div|article|span|footer|aside|p|pre|dl|li|ul|ol)) [^>]+>!is' => "<\\1>",
-        //single newlines cleanup
+        // '!<(\s*/?\s*(?:blockquote|br|hr|code|div|article|span|footer|aside|p|pre|dl|li|ul|ol)) [^>]+>!is' => "<\\1>",
+        // single newlines cleanup
         "/\n+/" => "\n",
         // modern web...
         '!<pre[^>]*>\s*<code!is' => '<pre',
@@ -366,7 +366,7 @@ class Readability implements LoggerAwareInterface
             $articleLink->setAttribute('style', 'color: inherit; text-decoration: none;');
             $articleLink->setAttribute('name', 'readabilityLink-' . $linkCount);
             $footnote->setInnerHtml('<small><sup><a href="#readabilityLink-' . $linkCount . '" title="Jump to Link in Article">^</a></sup></small> ');
-            $footnoteLink->setInnerHtml(('' !== $footnoteLink->getAttribute('title') ? $footnoteLink->getAttribute('title') : $linkText));
+            $footnoteLink->setInnerHtml('' !== $footnoteLink->getAttribute('title') ? $footnoteLink->getAttribute('title') : $linkText);
             $footnoteLink->setAttribute('name', 'readabilityFootnoteLink-' . $linkCount);
             $footnote->appendChild($footnoteLink);
 
@@ -796,7 +796,7 @@ class Readability implements LoggerAwareInterface
      */
     public function addFlag($flag)
     {
-        $this->flags = $this->flags | $flag;
+        $this->flags |= $flag;
     }
 
     /**
@@ -806,13 +806,14 @@ class Readability implements LoggerAwareInterface
      */
     public function removeFlag($flag)
     {
-        $this->flags = $this->flags & ~$flag;
+        $this->flags &= ~$flag;
     }
 
     /**
      * Debug.
      *
      * @deprecated use $this->logger->debug() instead
+     *
      * @codeCoverageIgnore
      */
     protected function dbg($msg)
@@ -824,6 +825,7 @@ class Readability implements LoggerAwareInterface
      * Dump debug info.
      *
      * @deprecated since Monolog gather log, we don't need it
+     *
      * @codeCoverageIgnore
      */
     protected function dump_dbg()
@@ -973,11 +975,11 @@ class Readability implements LoggerAwareInterface
      * Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
      *
-     * @param \DOMElement $page
+     * @param ?\DOMElement $page
      *
      * @return \DOMElement|false
      */
-    protected function grabArticle(\DOMElement $page = null)
+    protected function grabArticle($page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -992,7 +994,7 @@ class Readability implements LoggerAwareInterface
 
         $allElements = $page->getElementsByTagName('*');
 
-        for ($nodeIndex = 0; ($node = $allElements->item($nodeIndex)); ++$nodeIndex) {
+        for ($nodeIndex = 0; $node = $allElements->item($nodeIndex); ++$nodeIndex) {
             $tagName = $node->tagName;
 
             $nodeContent = $node->getInnerHTML();
@@ -1136,9 +1138,9 @@ class Readability implements LoggerAwareInterface
                 // Remove unlikely candidates
                 $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
 
-                if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
-                    preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
-                    !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
+                if (mb_strlen($unlikelyMatchString) > 3 // don't process "empty" strings
+                    && preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString)
+                    && !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
                 ) {
                     $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
                     $node->parentNode->removeChild($node);
@@ -1289,8 +1291,8 @@ class Readability implements LoggerAwareInterface
 
                 // To ensure a node does not interfere with readability styles, remove its classnames & ids.
                 // Now done via RegExp post_filter.
-                //$nodeToAppend->removeAttribute('class');
-                //$nodeToAppend->removeAttribute('id');
+                // $nodeToAppend->removeAttribute('class');
+                // $nodeToAppend->removeAttribute('id');
                 // Append sibling and subtract from our list as appending removes a node.
                 $articleContent->appendChild($nodeToAppend);
             }

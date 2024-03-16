@@ -39,9 +39,9 @@ class JSLikeHTMLElement extends \DOMElement
     /**
      * Used for setting innerHTML like it's done in JavaScript:.
      *
-     * @code
+     * ```php
      * $div->innerHTML = '<h2>Chapter 2</h2><p>The story begins...</p>';
-     * @endcode
+     * ```
      */
     public function __set($name, $value)
     {
@@ -104,9 +104,9 @@ class JSLikeHTMLElement extends \DOMElement
     /**
      * Used for getting innerHTML like it's done in JavaScript:.
      *
-     * @code
+     * ```php
      * $string = $div->innerHTML;
-     * @endcode
+     * ```
      */
     public function __get($name)
     {
