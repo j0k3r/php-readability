@@ -550,7 +550,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         }
     }
 
-    private function getReadability(string $html, string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
+    private function getReadability(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
     {
         $readability = new Readability($html, $url, $parser, $useTidy);
 
