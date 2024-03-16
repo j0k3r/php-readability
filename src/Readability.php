@@ -1477,14 +1477,23 @@ class Readability implements LoggerAwareInterface
             );
     }
 
+    /**
+     * Checks if `$node` has only whitespace and a single element with `$tag` for the tag name.
+     * Returns false if `$node` contains non-empty text nodes
+     * or if it contains no element with given tag or more than 1 element.
+     */
     private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
     {
-        if (1 !== $node->childNodes->length || $node->childNodes->item(0)->nodeName !== $tag) {
+        $childNodes = iterator_to_array($node->childNodes);
+        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof \DOMElement);
+
+        // There should be exactly 1 element child with given tag
+        if (1 !== \count($children) || $children[0]->nodeName !== $tag) {
             return false;
         }
 
         $a = array_filter(
-            iterator_to_array($node->childNodes),
+            $childNodes,
             fn ($childNode) => $childNode instanceof \DOMText && preg_match($this->regexps['hasContent'], $this->getInnerText($childNode))
         );
 
