@@ -586,7 +586,7 @@ class Readability implements LoggerAwareInterface
                 }
 
                 // Then check the elements inside this element for the same.
-                if (preg_match($this->regexps['media'], $targetList->item($y)->getInnerHTML())) {
+                if (preg_match($this->regexps['media'], $currentItem->getInnerHTML())) {
                     continue;
                 }
             }
@@ -719,8 +719,9 @@ class Readability implements LoggerAwareInterface
             $headers = $e->getElementsByTagName('h' . $headerIndex);
 
             for ($i = $headers->length - 1; $i >= 0; --$i) {
-                if ($this->getWeight($headers->item($i)) < 0 || $this->getLinkDensity($headers->item($i)) > 0.33) {
-                    $headers->item($i)->parentNode->removeChild($headers->item($i));
+                $header = $headers->item($i);
+                if ($this->getWeight($header) < 0 || $this->getLinkDensity($header) > 0.33) {
+                    $header->parentNode->removeChild($header);
                 }
             }
         }
@@ -812,12 +813,14 @@ class Readability implements LoggerAwareInterface
         // Remove all style tags in head.
         $styleTags = $this->dom->getElementsByTagName('style');
         for ($i = $styleTags->length - 1; $i >= 0; --$i) {
-            $styleTags->item($i)->parentNode->removeChild($styleTags->item($i));
+            $styleTag = $styleTags->item($i);
+            $styleTag->parentNode->removeChild($styleTag);
         }
 
         $linkTags = $this->dom->getElementsByTagName('link');
         for ($i = $linkTags->length - 1; $i >= 0; --$i) {
-            $linkTags->item($i)->parentNode->removeChild($linkTags->item($i));
+            $linkTag = $linkTags->item($i);
+            $linkTag->parentNode->removeChild($linkTag);
         }
     }
 
