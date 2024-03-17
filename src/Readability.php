@@ -903,8 +903,7 @@ class Readability implements LoggerAwareInterface
 
         $allElements = $page->getElementsByTagName('*');
 
-        for ($nodeIndex = 0; $allElements->item($nodeIndex); ++$nodeIndex) {
-            $node = $allElements->item($nodeIndex);
+        foreach (iterator_to_array($allElements) as $node) {
             $tagName = $node->tagName;
 
             $nodeContent = $node->getInnerHTML();
@@ -917,7 +916,6 @@ class Readability implements LoggerAwareInterface
             if (!$this->isNodeVisible($node)) {
                 $this->logger->debug('Removing invisible node ' . $node->getNodePath());
                 $node->parentNode->removeChild($node);
-                --$nodeIndex;
                 continue;
             }
 
@@ -930,7 +928,6 @@ class Readability implements LoggerAwareInterface
             ) {
                 $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '"');
                 $node->parentNode->removeChild($node);
-                --$nodeIndex;
                 continue;
             }
 
@@ -949,7 +946,6 @@ class Readability implements LoggerAwareInterface
                         $newNode->setInnerHtml($nodeContent);
 
                         $node->parentNode->replaceChild($newNode, $node);
-                        --$nodeIndex;
                         $nodesToScore[] = $newNode;
                     } catch (\Exception $e) {
                         $this->logger->error('Could not alter div/article to p, reverting back to div: ' . $e->getMessage());
@@ -1216,8 +1212,7 @@ class Readability implements LoggerAwareInterface
         $parentOfTopCandidate = $topCandidate->parentNode;
         $siblingNodes = $parentOfTopCandidate->childNodes;
 
-        for ($s = 0, $sl = $siblingNodes->length; $s < $sl; ++$s) {
-            $siblingNode = $siblingNodes->item($s);
+        foreach (iterator_to_array($siblingNodes) as $siblingNode) {
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
             $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . ((\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
@@ -1260,13 +1255,9 @@ class Readability implements LoggerAwareInterface
                     } catch (\Exception $e) {
                         $this->logger->debug('Could not alter siblingNode "' . $siblingNodeName . '" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
-                        --$s;
-                        --$sl;
                     }
                 } else {
                     $nodeToAppend = $siblingNode;
-                    --$s;
-                    --$sl;
                 }
 
                 // To ensure a node does not interfere with readability styles, remove its classnames & ids.
