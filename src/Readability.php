@@ -1079,11 +1079,6 @@ class Readability implements LoggerAwareInterface
                 }
             }
 
-            $candidates = $xpath->query('.//*[not(self::body) and (@class or @id or @style) and ((number(@readability) < 40) or not(@readability))]', $page->documentElement);
-
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
-            }
             unset($candidates);
         }
 
