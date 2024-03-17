@@ -287,6 +287,7 @@ class Readability implements LoggerAwareInterface
 
         if (null === $articleContent) {
             $this->success = false;
+            /** @var JSLikeHTMLElement */
             $articleContent = $this->dom->createElement('div');
             $articleContent->setAttribute('class', 'readability-content');
             $articleContent->setInnerHtml('<p>Sorry, Readability was unable to parse this page for content.</p>');
@@ -302,7 +303,9 @@ class Readability implements LoggerAwareInterface
 
         // without tidy the body can (sometimes) be wiped, so re-create it
         if (false === isset($this->body->childNodes)) {
-            $this->body = $this->dom->createElement('body');
+            /** @var JSLikeHTMLElement */
+            $body = $this->dom->createElement('body');
+            $this->body = $body;
         }
 
         // Clear the old HTML, insert the new content.
@@ -335,19 +338,23 @@ class Readability implements LoggerAwareInterface
      */
     public function addFootnotes(\DOMElement $articleContent): void
     {
+        /** @var JSLikeHTMLElement */
         $footnotesWrapper = $this->dom->createElement('footer');
         $footnotesWrapper->setAttribute('class', 'readability-footnotes');
         $footnotesWrapper->setInnerHtml('<h3>References</h3>');
         $articleFootnotes = $this->dom->createElement('ol');
         $articleFootnotes->setAttribute('class', 'readability-footnotes-list');
         $footnotesWrapper->appendChild($articleFootnotes);
+        /** @var \DOMNodeList<JSLikeHTMLElement> */
         $articleLinks = $articleContent->getElementsByTagName('a');
         $linkCount = 0;
 
         for ($i = 0; $i < $articleLinks->length; ++$i) {
             $articleLink = $articleLinks->item($i);
             $footnoteLink = $articleLink->cloneNode(true);
+            /** @var JSLikeHTMLElement */
             $refLink = $this->dom->createElement('a');
+            /** @var JSLikeHTMLElement */
             $footnote = $this->dom->createElement('li');
             $linkDomain = @parse_url($footnoteLink->getAttribute('href'), \PHP_URL_HOST);
             if (!$linkDomain && isset($this->url)) {
@@ -609,6 +616,7 @@ class Readability implements LoggerAwareInterface
      */
     public function clean(JSLikeHTMLElement $e, string $tag): void
     {
+        /** @var \DOMNodeList<JSLikeHTMLElement> */
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
 
@@ -645,6 +653,7 @@ class Readability implements LoggerAwareInterface
             return;
         }
 
+        /** @var \DOMNodeList<JSLikeHTMLElement> */
         $tagsList = $e->getElementsByTagName($tag);
         $curTagsLength = $tagsList->length;
 
@@ -755,6 +764,7 @@ class Readability implements LoggerAwareInterface
     public function cleanHeaders(JSLikeHTMLElement $e): void
     {
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
+            /** @var \DOMNodeList<JSLikeHTMLElement> */
             $headers = $e->getElementsByTagName('h' . $headerIndex);
 
             for ($i = $headers->length - 1; $i >= 0; --$i) {
@@ -823,6 +833,7 @@ class Readability implements LoggerAwareInterface
             $curTitle = $origTitle;
         }
 
+        /** @var JSLikeHTMLElement */
         $articleTitle = $this->dom->createElement('h1');
         $articleTitle->setInnerHtml($curTitle);
 
@@ -840,7 +851,9 @@ class Readability implements LoggerAwareInterface
          * so we create a new body node and append it to the document.
          */
         if (null === $this->body) {
-            $this->body = $this->dom->createElement('body');
+            /** @var JSLikeHTMLElement */
+            $body = $this->dom->createElement('body');
+            $this->body = $body;
             $this->dom->documentElement->appendChild($this->body);
         }
 
@@ -944,6 +957,7 @@ class Readability implements LoggerAwareInterface
             $xpath = new \DOMXPath($page);
         }
 
+        /** @var \DOMNodeList<JSLikeHTMLElement> */
         $allElements = $page->getElementsByTagName('*');
 
         for ($nodeIndex = 0; $allElements->item($nodeIndex); ++$nodeIndex) {
@@ -986,6 +1000,7 @@ class Readability implements LoggerAwareInterface
             //  (as in, where they contain no other block level elements).
             if ('div' === $tagName) {
                 if (!preg_match($this->regexps['divToPElements'], $nodeContent)) {
+                    /** @var JSLikeHTMLElement */
                     $newNode = $this->dom->createElement('p');
 
                     try {
@@ -1156,7 +1171,7 @@ class Readability implements LoggerAwareInterface
             }
         }
 
-        /** @var \DOMNodeList<JSLikeHTMLElement> */
+        /** @var non-empty-array<JSLikeHTMLElement|null> */
         $topCandidates = array_filter(
             $topCandidates,
             fn ($v, $idx) => 0 === $idx || null !== $v,
@@ -1169,18 +1184,21 @@ class Readability implements LoggerAwareInterface
          * We also have to copy the body node so it is something we can modify.
          */
         if (null === $topCandidate || 0 === strcasecmp($topCandidate->tagName, 'body')) {
+            /** @var JSLikeHTMLElement */
             $topCandidate = $this->dom->createElement('div');
 
             if ($page instanceof \DOMDocument) {
-                if (!isset($page->documentElement)) {
+                /** @var ?JSLikeHTMLElement */
+                $documentElement = $page->documentElement;
+                if (null === $documentElement) {
                     // we don't have a body either? what a mess! :)
                     $this->logger->debug('The page has no body!');
                 } else {
                     $this->logger->debug('Setting body to a raw HTML of original page!');
-                    $topCandidate->setInnerHtml($page->documentElement->getInnerHTML());
-                    $page->documentElement->setInnerHtml('');
+                    $topCandidate->setInnerHtml($documentElement->getInnerHTML());
+                    $documentElement->setInnerHtml('');
                     $this->reinitBody();
-                    $page->documentElement->appendChild($topCandidate);
+                    $documentElement->appendChild($topCandidate);
                 }
             } else {
                 $topCandidate->setInnerHtml($page->getInnerHTML());
@@ -1189,7 +1207,7 @@ class Readability implements LoggerAwareInterface
             }
 
             $this->initializeNode($topCandidate);
-        } elseif ($topCandidate) {
+        } elseif (null !== $topCandidate) {
             $alternativeCandidateAncestors = [];
             foreach ($topCandidates as $candidate) {
                 if ((int) $candidate->getAttribute('readability') / (int) $topCandidate->getAttribute('readability') >= 0.75) {
@@ -1200,7 +1218,7 @@ class Readability implements LoggerAwareInterface
             }
             if (\count($alternativeCandidateAncestors) >= 3) {
                 $parentOfTopCandidate = $topCandidate->parentNode;
-                while ('body' !== $parentOfTopCandidate->nodeName) {
+                while ('body' !== $parentOfTopCandidate->nodeName && $parentOfTopCandidate instanceof JSLikeHTMLElement) {
                     $listsContainingThisAncestor = 0;
                     for ($ancestorIndex = 0; $ancestorIndex < \count($alternativeCandidateAncestors) && $listsContainingThisAncestor < 3; ++$ancestorIndex) {
                         $listsContainingThisAncestor += (int) \in_array($parentOfTopCandidate, $alternativeCandidateAncestors[$ancestorIndex], true);
@@ -1264,6 +1282,7 @@ class Readability implements LoggerAwareInterface
          * Now that we have the top candidate, look through its siblings for content that might also be related.
          * Things like preambles, content split by ads that we removed, etc.
          */
+        /** @var JSLikeHTMLElement */
         $articleContent = $this->dom->createElement('div');
         $articleContent->setAttribute('class', 'readability-content');
         $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
@@ -1311,6 +1330,7 @@ class Readability implements LoggerAwareInterface
                 if (0 !== strcasecmp($siblingNodeName, 'div') && 0 !== strcasecmp($siblingNodeName, 'p')) {
                     // We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident.
                     $this->logger->debug('Altering siblingNode "' . $siblingNodeName . '" to "div".');
+                    /** @var JSLikeHTMLElement */
                     $nodeToAppend = $this->dom->createElement('div');
 
                     try {
@@ -1412,7 +1432,9 @@ class Readability implements LoggerAwareInterface
     protected function reinitBody(): void
     {
         if (!isset($this->body->childNodes)) {
-            $this->body = $this->dom->createElement('body');
+            /** @var JSLikeHTMLElement */
+            $body = $this->dom->createElement('body');
+            $this->body = $body;
             $this->body->setInnerHtml($this->bodyCache);
         }
     }
@@ -1544,7 +1566,7 @@ class Readability implements LoggerAwareInterface
     private function getSingleTagInsideElement(JSLikeHTMLElement $node, string $tag): ?JSLikeHTMLElement
     {
         $childNodes = iterator_to_array($node->childNodes);
-        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof \DOMElement);
+        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof JSLikeHTMLElement);
 
         // There should be exactly 1 element child with given tag
         if (1 !== \count($children) || $children[0]->nodeName !== $tag) {
