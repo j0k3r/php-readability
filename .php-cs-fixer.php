@@ -26,6 +26,10 @@ return (new PhpCsFixer\Config())
         'strict_comparison' => true,
         'strict_param' => true,
         'concat_space' => ['spacing' => 'one'],
+        // Pulled in by @Symfony:risky but we still support PHP 7.4
+        'modernize_strpos' => false,
+        // Pulled in by @Symfony, we cannot add property types until we bump PHP to ≥ 7.4
+        'no_null_property_initialization' => false,
     ])
     ->setFinder($finder)
 ;

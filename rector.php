@@ -23,9 +23,9 @@ return static function (RectorConfig $rectorConfig): void {
 
     // Define what rule sets will be applied
     $rectorConfig->sets([
-        LevelSetList::UP_TO_PHP_72,
+        LevelSetList::UP_TO_PHP_74,
     ]);
 
     // is your PHP version different from the one your refactor to?
-    $rectorConfig->phpVersion(PhpVersion::PHP_72);
+    $rectorConfig->phpVersion(PhpVersion::PHP_74);
 };

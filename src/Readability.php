@@ -142,7 +142,7 @@ class Readability implements LoggerAwareInterface
      * @param string $parser  Which parser to use for turning raw HTML into a DOMDocument
      * @param bool   $useTidy Use tidy
      */
-    public function __construct(string $html, string $url = null, string $parser = 'libxml', bool $useTidy = true)
+    public function __construct(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true)
     {
         $this->url = $url;
         $this->html = $html;
@@ -739,7 +739,7 @@ class Readability implements LoggerAwareInterface
      */
     public function addFlag(int $flag): void
     {
-        $this->flags = $this->flags | $flag;
+        $this->flags |= $flag;
     }
 
     /**
@@ -747,7 +747,7 @@ class Readability implements LoggerAwareInterface
      */
     public function removeFlag(int $flag): void
     {
-        $this->flags = $this->flags & ~$flag;
+        $this->flags &= ~$flag;
     }
 
     /**
@@ -893,11 +893,9 @@ class Readability implements LoggerAwareInterface
      * Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
      *
-     * @param \DOMElement $page
-     *
      * @return \DOMElement|false
      */
-    protected function grabArticle(\DOMElement $page = null)
+    protected function grabArticle(?\DOMElement $page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -933,9 +931,9 @@ class Readability implements LoggerAwareInterface
             // Remove unlikely candidates
             $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
 
-            if (mb_strlen($unlikelyMatchString) > 3 && // don't process "empty" strings
-                preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString) &&
-                !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
+            if (mb_strlen($unlikelyMatchString) > 3 // don't process "empty" strings
+                && preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString)
+                && !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
             ) {
                 $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '"');
                 $node->parentNode->removeChild($node);
@@ -1120,9 +1118,11 @@ class Readability implements LoggerAwareInterface
             }
         }
 
-        $topCandidates = array_filter($topCandidates, function ($v, $idx) {
-            return 0 === $idx || null !== $v;
-        }, \ARRAY_FILTER_USE_BOTH);
+        $topCandidates = array_filter(
+            $topCandidates,
+            fn ($v, $idx) => 0 === $idx || null !== $v,
+            \ARRAY_FILTER_USE_BOTH
+        );
         $topCandidate = $topCandidates[0];
 
         /*
@@ -1442,7 +1442,7 @@ class Readability implements LoggerAwareInterface
             libxml_use_internal_errors(false);
         }
 
-        $this->dom->registerNodeClass(\DOMElement::class, \Readability\JSLikeHTMLElement::class);
+        $this->dom->registerNodeClass(\DOMElement::class, JSLikeHTMLElement::class);
     }
 
     private function getAncestors(\DOMElement $node, int $maxDepth = 0): array
@@ -1464,9 +1464,17 @@ class Readability implements LoggerAwareInterface
     {
         return \XML_TEXT_NODE === $node->nodeType
             || \in_array(strtoupper($node->nodeName), $this->phrasingElements, true)
-            || (\in_array(strtoupper($node->nodeName), ['A', 'DEL', 'INS'], true) && !\in_array(false, array_map(function ($c) {
-                return $this->isPhrasingContent($c);
-            }, iterator_to_array($node->childNodes)), true));
+            || (
+                \in_array(strtoupper($node->nodeName), ['A', 'DEL', 'INS'], true)
+                && !\in_array(
+                    false,
+                    array_map(
+                        fn ($c) => $this->isPhrasingContent($c),
+                        iterator_to_array($node->childNodes)
+                    ),
+                    true
+                )
+            );
     }
 
     private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
@@ -1475,10 +1483,10 @@ class Readability implements LoggerAwareInterface
             return false;
         }
 
-        $a = array_filter(iterator_to_array($node->childNodes), function ($childNode) {
-            return $childNode instanceof \DOMText &&
-                preg_match($this->regexps['hasContent'], $this->getInnerText($childNode));
-        });
+        $a = array_filter(
+            iterator_to_array($node->childNodes),
+            fn ($childNode) => $childNode instanceof \DOMText && preg_match($this->regexps['hasContent'], $this->getInnerText($childNode))
+        );
 
         return 0 === \count($a);
     }
@@ -1491,9 +1499,10 @@ class Readability implements LoggerAwareInterface
      */
     private function isNodeVisible(\DOMElement $node): bool
     {
-        return !($node->hasAttribute('style')
-                    && preg_match($this->regexps['isNotVisible'], $node->getAttribute('style'))
+        return !(
+            $node->hasAttribute('style')
+            && preg_match($this->regexps['isNotVisible'], $node->getAttribute('style'))
         )
-                && !$node->hasAttribute('hidden');
+        && !$node->hasAttribute('hidden');
     }
 }
