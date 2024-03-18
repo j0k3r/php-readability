@@ -1,19 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Readability;
 
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
-use Readability\JSLikeHTMLElement;
 use Readability\Readability;
 
 class ReadabilityTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var TestHandler */
-    public $logHandler;
-    /** @var LoggerInterface */
-    public $logger;
+    public TestHandler $logHandler;
+    public LoggerInterface $logger;
 
     /**
      * @requires extension tidy
@@ -80,8 +79,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $res = $readability->init();
 
         $this->assertFalse($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('Sorry, Readability was unable to parse this page for content.', $readability->getContent()->getInnerHtml());
     }
@@ -92,8 +89,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('<div readability=', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is the awesome content :)', $readability->getContent()->getInnerHtml());
@@ -105,8 +100,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('<div readability=', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is the awesome content :)', $readability->getContent()->getInnerHtml());
@@ -115,12 +108,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testInitDiv(): void
     {
         $readability = $this->getReadability('<div>' . str_repeat('This is the awesome content :)', 7) . '</div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('<div readability=', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is the awesome content :)', $readability->getContent()->getInnerHtml());
@@ -129,13 +119,10 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithFootnotes(): void
     {
         $readability = $this->getReadability('<div>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '</div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->convertLinksToFootnotes = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('<div readability=', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
@@ -146,13 +133,10 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testStandardClean(): void
     {
         $readability = $this->getReadability('<div><h2>Title</h2>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<a href="#nofollow" rel="nofollow">will NOT be removed</a></div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->lightClean = false;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('<div readability=', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
@@ -163,12 +147,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithIframe(): void
     {
         $readability = $this->getReadability('<div><h2>Title</h2>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<p>This is an awesome text with some links, here there are <iframe src="http://youtube.com/test" href="#nofollow" rel="nofollow"></iframe><iframe>http://soundcloud.com/test</iframe></p></div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('<div readability=', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
@@ -178,12 +159,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithArticle(): void
     {
         $readability = $this->getReadability('<article><p>' . str_repeat('This is an awesome text with some links, here there are: the awesome', 20) . '</p><p>This is an awesome text with some links, here there are <iframe src="http://youtube.com/test" href="#nofollow" rel="nofollow"></iframe></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('alt="article"', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
@@ -193,12 +171,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithAside(): void
     {
         $readability = $this->getReadability('<article>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<footer><aside>' . str_repeat('<p>This is an awesome text with some links, here there are</p>', 8) . '</aside></footer></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringNotContainsString('<aside>', $readability->getContent()->getInnerHtml());
@@ -208,12 +183,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithClasses(): void
     {
         $readability = $this->getReadability('<article>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<div style="display:none">' . str_repeat('<p class="clock">This text should be removed</p>', 10) . '</div></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('alt="article"', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
@@ -223,13 +195,10 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithClassesWithoutLightClean(): void
     {
         $readability = $this->getReadability('<article>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<div style="display:none">' . str_repeat('<p class="clock">This text should be removed</p>', 10) . '</div></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->lightClean = false;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertStringContainsString('alt="article"', $readability->getContent()->getInnerHtml());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
@@ -239,12 +208,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithTd(): void
     {
         $readability = $this->getReadability('<table><tr>' . str_repeat('<td><p>This is an awesome text with some links, here there are the awesome</td>', 7) . '</tr></table>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
     }
@@ -252,12 +218,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithSameClasses(): void
     {
         $readability = $this->getReadability('<article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<div class="awesomecontent">This text is also an awesome text and you should know that !</div></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
@@ -266,12 +229,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithScript(): void
     {
         $readability = $this->getReadability('<article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p><script>This text is also an awesome text and you should know that !</script></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertEmpty($readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringNotContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
@@ -280,12 +240,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitle(): void
     {
         $readability = $this->getReadability('<title>this is my title</title><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertSame('this is my title', $readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringNotContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
@@ -294,12 +251,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitleWithDash(): void
     {
         $readability = $this->getReadability('<title> title2 - title3 </title><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertSame('title2 - title3', $readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringNotContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
@@ -308,12 +262,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitleWithDoubleDot(): void
     {
         $readability = $this->getReadability('<title> title2 : title3 </title><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertSame('title2 : title3', $readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringNotContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
@@ -322,12 +273,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitleTooShortUseH1(): void
     {
         $readability = $this->getReadability('<title>too short</title><h1>this is my h1 title !</h1><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertSame('this is my h1 title !', $readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('This is an awesome text with some links, here there are', $readability->getContent()->getInnerHtml());
         $this->assertStringNotContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
@@ -338,7 +286,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $oldErrorReporting = error_reporting(\E_ALL | \E_STRICT);
         $oldDisplayErrors = ini_set('display_errors', '1');
         // dummy function to be used to the next test
-        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline, array $errcontext) {
+        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
             throw new \Exception($errstr, $errno);
         }, \E_ALL | \E_STRICT);
 
@@ -369,13 +317,10 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
                 </html>';
 
             $readability = $this->getReadability($data, 'http://iosgames.ru/?p=22030');
-            $readability->debug = true;
 
             $res = $readability->init();
 
             $this->assertTrue($res);
-            $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-            $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
             $this->assertStringContainsString('<iframe src="https://www.youtube.com/embed/PUep6xNeKjA" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"> </iframe>', $readability->getContent()->getInnerHtml());
             $this->assertStringContainsString('3D Touch', $readability->getTitle()->getInnerHtml());
         } finally {
@@ -437,13 +382,10 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
             </html>';
 
         $readability = $this->getReadability($data, 'http://0.0.0.0');
-        $readability->debug = true;
 
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
-        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
     }
 
     public function testPostFilters(): void
@@ -474,7 +416,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $html = (string) file_get_contents('tests/fixtures/childNodeGoesNull.html');
 
         $readability = $this->getReadability($html, 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->convertLinksToFootnotes = true;
         $res = $readability->init();
 
@@ -487,7 +428,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $html = (string) file_get_contents('tests/fixtures/keepFootnotes.html');
 
         $readability = $this->getReadability($html, 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -501,7 +441,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $html = (string) file_get_contents('tests/fixtures/wipedBody.html');
 
         $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', false);
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -540,7 +479,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testVisibleNode(string $content, bool $shouldBeVisible): void
     {
         $readability = $this->getReadability($content, 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         if ($shouldBeVisible) {
