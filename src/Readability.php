@@ -374,8 +374,7 @@ class Readability implements LoggerAwareInterface
              * which is what they were before.
              */
             $elems = $xpath->query('.//p[@data-readability-styled]', $articleContent);
-            for ($i = $elems->length - 1; $i >= 0; --$i) {
-                $e = $elems->item($i);
+            foreach (iterator_to_array($elems) as $e) {
                 $e->parentNode->replaceChild($articleContent->ownerDocument->createTextNode($e->textContent), $e);
             }
         }
@@ -415,9 +414,7 @@ class Readability implements LoggerAwareInterface
         // Remove extra paragraphs.
         $articleParagraphs = $articleContent->getElementsByTagName('p');
 
-        for ($i = $articleParagraphs->length - 1; $i >= 0; --$i) {
-            $item = $articleParagraphs->item($i);
-
+        foreach (iterator_to_array($articleParagraphs) as $item) {
             $imgCount = $item->getElementsByTagName('img')->length;
             $embedCount = $item->getElementsByTagName('embed')->length;
             $objectCount = $item->getElementsByTagName('object')->length;
@@ -573,10 +570,8 @@ class Readability implements LoggerAwareInterface
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
 
-        for ($y = $targetList->length - 1; $y >= 0; --$y) {
+        foreach (iterator_to_array($targetList) as $currentItem) {
             // Allow youtube and vimeo videos through as people usually want to see those.
-            $currentItem = $targetList->item($y);
-
             if ($isEmbed) {
                 $attributeValues = $currentItem->getAttribute('src') . ' ' . $currentItem->getAttribute('href');
 
@@ -586,7 +581,7 @@ class Readability implements LoggerAwareInterface
                 }
 
                 // Then check the elements inside this element for the same.
-                if (preg_match($this->regexps['media'], $targetList->item($y)->getInnerHTML())) {
+                if (preg_match($this->regexps['media'], $currentItem->getInnerHTML())) {
                     continue;
                 }
             }
@@ -607,7 +602,6 @@ class Readability implements LoggerAwareInterface
         }
 
         $tagsList = $e->getElementsByTagName($tag);
-        $curTagsLength = $tagsList->length;
 
         /*
          * Gather counts for other typical elements embedded within.
@@ -615,8 +609,7 @@ class Readability implements LoggerAwareInterface
          *
          * TODO: Consider taking into account original contentScore here.
          */
-        for ($i = $curTagsLength - 1; $i >= 0; --$i) {
-            $node = $tagsList->item($i);
+        foreach (iterator_to_array($tagsList) as $node) {
             $weight = $this->getWeight($node);
             $contentScore = ($node->hasAttribute('readability')) ? (int) $node->getAttribute('readability') : 0;
             $this->logger->debug('Start conditional cleaning of ' . $node->getNodePath() . ' (class=' . $node->getAttribute('class') . '; id=' . $node->getAttribute('id') . ')' . (($node->hasAttribute('readability')) ? (' with score ' . $node->getAttribute('readability')) : ''));
@@ -718,8 +711,7 @@ class Readability implements LoggerAwareInterface
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h' . $headerIndex);
 
-            for ($i = $headers->length - 1; $i >= 0; --$i) {
-                $header = $headers->item($i);
+            foreach (iterator_to_array($headers) as $header) {
                 if ($this->getWeight($header) < 0 || $this->getLinkDensity($header) > 0.33) {
                     $header->parentNode->removeChild($header);
                 }
@@ -812,14 +804,12 @@ class Readability implements LoggerAwareInterface
 
         // Remove all style tags in head.
         $styleTags = $this->dom->getElementsByTagName('style');
-        for ($i = $styleTags->length - 1; $i >= 0; --$i) {
-            $styleTag = $styleTags->item($i);
+        foreach (iterator_to_array($styleTags) as $styleTag) {
             $styleTag->parentNode->removeChild($styleTag);
         }
 
         $linkTags = $this->dom->getElementsByTagName('link');
-        for ($i = $linkTags->length - 1; $i >= 0; --$i) {
-            $linkTag = $linkTags->item($i);
+        foreach (iterator_to_array($linkTags) as $linkTag) {
             $linkTag->parentNode->removeChild($linkTag);
         }
     }
@@ -1070,8 +1060,7 @@ class Readability implements LoggerAwareInterface
         if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
             $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
 
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
+            foreach (iterator_to_array($candidates) as $node) {
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
                     $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
@@ -1092,9 +1081,7 @@ class Readability implements LoggerAwareInterface
             $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
             $this->logger->debug('Candidates: ' . $candidates->length);
 
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $item = $candidates->item($c);
-
+            foreach (iterator_to_array($candidates) as $item) {
                 // Scale the final candidates score based on link density. Good content should have a
                 // relatively small link density (5% or less) and be mostly unaffected by this operation.
                 // If not for this we would have used XPath to find maximum @readability.
