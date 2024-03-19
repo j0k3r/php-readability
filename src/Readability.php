@@ -302,8 +302,7 @@ class Readability implements LoggerAwareInterface
         $articleLinks = $articleContent->getElementsByTagName('a');
         $linkCount = 0;
 
-        for ($i = 0; $i < $articleLinks->length; ++$i) {
-            $articleLink = $articleLinks->item($i);
+        foreach ($articleLinks as $articleLink) {
             $footnoteLink = $articleLink->cloneNode(true);
             $refLink = $this->dom->createElement('a');
             $footnote = $this->dom->createElement('li');
@@ -375,16 +374,15 @@ class Readability implements LoggerAwareInterface
              * which is what they were before.
              */
             $elems = $xpath->query('.//p[@data-readability-styled]', $articleContent);
-            for ($i = $elems->length - 1; $i >= 0; --$i) {
-                $e = $elems->item($i);
+            foreach (iterator_to_array($elems) as $e) {
                 $e->parentNode->replaceChild($articleContent->ownerDocument->createTextNode($e->textContent), $e);
             }
         }
 
         // Remove service data-candidate attribute.
         $elems = $xpath->query('.//*[@data-candidate]', $articleContent);
-        for ($i = $elems->length - 1; $i >= 0; --$i) {
-            $elems->item($i)->removeAttribute('data-candidate');
+        foreach ($elems as $elem) {
+            $elem->removeAttribute('data-candidate');
         }
 
         // Clean out junk from the article content.
@@ -416,9 +414,7 @@ class Readability implements LoggerAwareInterface
         // Remove extra paragraphs.
         $articleParagraphs = $articleContent->getElementsByTagName('p');
 
-        for ($i = $articleParagraphs->length - 1; $i >= 0; --$i) {
-            $item = $articleParagraphs->item($i);
-
+        foreach (iterator_to_array($articleParagraphs) as $item) {
             $imgCount = $item->getElementsByTagName('img')->length;
             $embedCount = $item->getElementsByTagName('embed')->length;
             $objectCount = $item->getElementsByTagName('object')->length;
@@ -520,11 +516,12 @@ class Readability implements LoggerAwareInterface
         $textLength = mb_strlen($this->getInnerText($e, true, true));
         $linkLength = 0;
 
-        for ($dRe = $this->domainRegExp, $i = 0, $il = $links->length; $i < $il; ++$i) {
-            if ($excludeExternal && $dRe && !preg_match($dRe, $links->item($i)->getAttribute('href'))) {
+        $dRe = $this->domainRegExp;
+        foreach ($links as $link) {
+            if ($excludeExternal && $dRe && !preg_match($dRe, $link->getAttribute('href'))) {
                 continue;
             }
-            $linkLength += mb_strlen($this->getInnerText($links->item($i)));
+            $linkLength += mb_strlen($this->getInnerText($link));
         }
 
         if ($textLength > 0 && $linkLength > 0) {
@@ -573,10 +570,8 @@ class Readability implements LoggerAwareInterface
         $targetList = $e->getElementsByTagName($tag);
         $isEmbed = ('audio' === $tag || 'video' === $tag || 'iframe' === $tag || 'object' === $tag || 'embed' === $tag);
 
-        for ($y = $targetList->length - 1; $y >= 0; --$y) {
+        foreach (iterator_to_array($targetList) as $currentItem) {
             // Allow youtube and vimeo videos through as people usually want to see those.
-            $currentItem = $targetList->item($y);
-
             if ($isEmbed) {
                 $attributeValues = $currentItem->getAttribute('src') . ' ' . $currentItem->getAttribute('href');
 
@@ -586,7 +581,7 @@ class Readability implements LoggerAwareInterface
                 }
 
                 // Then check the elements inside this element for the same.
-                if (preg_match($this->regexps['media'], $targetList->item($y)->getInnerHTML())) {
+                if (preg_match($this->regexps['media'], $currentItem->getInnerHTML())) {
                     continue;
                 }
             }
@@ -607,7 +602,6 @@ class Readability implements LoggerAwareInterface
         }
 
         $tagsList = $e->getElementsByTagName($tag);
-        $curTagsLength = $tagsList->length;
 
         /*
          * Gather counts for other typical elements embedded within.
@@ -615,8 +609,7 @@ class Readability implements LoggerAwareInterface
          *
          * TODO: Consider taking into account original contentScore here.
          */
-        for ($i = $curTagsLength - 1; $i >= 0; --$i) {
-            $node = $tagsList->item($i);
+        foreach (iterator_to_array($tagsList) as $node) {
             $weight = $this->getWeight($node);
             $contentScore = ($node->hasAttribute('readability')) ? (int) $node->getAttribute('readability') : 0;
             $this->logger->debug('Start conditional cleaning of ' . $node->getNodePath() . ' (class=' . $node->getAttribute('class') . '; id=' . $node->getAttribute('id') . ')' . (($node->hasAttribute('readability')) ? (' with score ' . $node->getAttribute('readability')) : ''));
@@ -640,15 +633,15 @@ class Readability implements LoggerAwareInterface
                 $embedCount = 0;
                 $embeds = $node->getElementsByTagName('embed');
 
-                for ($ei = 0, $il = $embeds->length; $ei < $il; ++$ei) {
-                    if (preg_match($this->regexps['media'], $embeds->item($ei)->getAttribute('src'))) {
+                foreach ($embeds as $embed) {
+                    if (preg_match($this->regexps['media'], $embed->getAttribute('src'))) {
                         ++$embedCount;
                     }
                 }
 
                 $embeds = $node->getElementsByTagName('iframe');
-                for ($ei = 0, $il = $embeds->length; $ei < $il; ++$ei) {
-                    if (preg_match($this->regexps['media'], $embeds->item($ei)->getAttribute('src'))) {
+                foreach ($embeds as $embed) {
+                    if (preg_match($this->regexps['media'], $embed->getAttribute('src'))) {
                         ++$embedCount;
                     }
                 }
@@ -718,9 +711,9 @@ class Readability implements LoggerAwareInterface
         for ($headerIndex = 1; $headerIndex < 3; ++$headerIndex) {
             $headers = $e->getElementsByTagName('h' . $headerIndex);
 
-            for ($i = $headers->length - 1; $i >= 0; --$i) {
-                if ($this->getWeight($headers->item($i)) < 0 || $this->getLinkDensity($headers->item($i)) > 0.33) {
-                    $headers->item($i)->parentNode->removeChild($headers->item($i));
+            foreach (iterator_to_array($headers) as $header) {
+                if ($this->getWeight($header) < 0 || $this->getLinkDensity($header) > 0.33) {
+                    $header->parentNode->removeChild($header);
                 }
             }
         }
@@ -811,13 +804,13 @@ class Readability implements LoggerAwareInterface
 
         // Remove all style tags in head.
         $styleTags = $this->dom->getElementsByTagName('style');
-        for ($i = $styleTags->length - 1; $i >= 0; --$i) {
-            $styleTags->item($i)->parentNode->removeChild($styleTags->item($i));
+        foreach (iterator_to_array($styleTags) as $styleTag) {
+            $styleTag->parentNode->removeChild($styleTag);
         }
 
         $linkTags = $this->dom->getElementsByTagName('link');
-        for ($i = $linkTags->length - 1; $i >= 0; --$i) {
-            $linkTags->item($i)->parentNode->removeChild($linkTags->item($i));
+        foreach (iterator_to_array($linkTags) as $linkTag) {
+            $linkTag->parentNode->removeChild($linkTag);
         }
     }
 
@@ -910,8 +903,7 @@ class Readability implements LoggerAwareInterface
 
         $allElements = $page->getElementsByTagName('*');
 
-        for ($nodeIndex = 0; $allElements->item($nodeIndex); ++$nodeIndex) {
-            $node = $allElements->item($nodeIndex);
+        foreach (iterator_to_array($allElements) as $node) {
             $tagName = $node->tagName;
 
             $nodeContent = $node->getInnerHTML();
@@ -924,7 +916,6 @@ class Readability implements LoggerAwareInterface
             if (!$this->isNodeVisible($node)) {
                 $this->logger->debug('Removing invisible node ' . $node->getNodePath());
                 $node->parentNode->removeChild($node);
-                --$nodeIndex;
                 continue;
             }
 
@@ -937,7 +928,6 @@ class Readability implements LoggerAwareInterface
             ) {
                 $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '"');
                 $node->parentNode->removeChild($node);
-                --$nodeIndex;
                 continue;
             }
 
@@ -956,7 +946,6 @@ class Readability implements LoggerAwareInterface
                         $newNode->setInnerHtml($nodeContent);
 
                         $node->parentNode->replaceChild($newNode, $node);
-                        --$nodeIndex;
                         $nodesToScore[] = $newNode;
                     } catch (\Exception $e) {
                         $this->logger->error('Could not alter div/article to p, reverting back to div: ' . $e->getMessage());
@@ -1015,15 +1004,15 @@ class Readability implements LoggerAwareInterface
          * A score is determined by things like number of commas, class names, etc.
          * Maybe eventually link density.
          */
-        for ($pt = 0, $scored = \count($nodesToScore); $pt < $scored; ++$pt) {
-            $ancestors = $this->getAncestors($nodesToScore[$pt], 5);
+        foreach ($nodesToScore as $nodeToScore) {
+            $ancestors = $this->getAncestors($nodeToScore, 5);
 
             // No parent node? Move on...
             if (0 === \count($ancestors)) {
                 continue;
             }
 
-            $innerText = $this->getInnerText($nodesToScore[$pt]);
+            $innerText = $this->getInnerText($nodeToScore);
 
             // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
             if (mb_strlen($innerText) < self::MIN_PARAGRAPH_LENGTH) {
@@ -1067,8 +1056,7 @@ class Readability implements LoggerAwareInterface
         if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
             $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
 
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
+            foreach (iterator_to_array($candidates) as $node) {
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
                 if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
                     $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . ($node->hasAttribute('readability') ? (int) $node->getAttributeNode('readability')->value : 0));
@@ -1076,11 +1064,6 @@ class Readability implements LoggerAwareInterface
                 }
             }
 
-            $candidates = $xpath->query('.//*[not(self::body) and (@class or @id or @style) and ((number(@readability) < 40) or not(@readability))]', $page->documentElement);
-
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
-            }
             unset($candidates);
         }
 
@@ -1094,9 +1077,7 @@ class Readability implements LoggerAwareInterface
             $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
             $this->logger->debug('Candidates: ' . $candidates->length);
 
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $item = $candidates->item($c);
-
+            foreach (iterator_to_array($candidates) as $item) {
                 // Scale the final candidates score based on link density. Good content should have a
                 // relatively small link density (5% or less) and be mostly unaffected by this operation.
                 // If not for this we would have used XPath to find maximum @readability.
@@ -1231,13 +1212,7 @@ class Readability implements LoggerAwareInterface
         $parentOfTopCandidate = $topCandidate->parentNode;
         $siblingNodes = $parentOfTopCandidate->childNodes;
 
-        if (0 === $siblingNodes->length) {
-            $siblingNodes = new \stdClass();
-            $siblingNodes->length = 0;
-        }
-
-        for ($s = 0, $sl = $siblingNodes->length; $s < $sl; ++$s) {
-            $siblingNode = $siblingNodes->item($s);
+        foreach (iterator_to_array($siblingNodes) as $siblingNode) {
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
             $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . ((\XML_ELEMENT_NODE === $siblingNode->nodeType && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
@@ -1280,13 +1255,9 @@ class Readability implements LoggerAwareInterface
                     } catch (\Exception $e) {
                         $this->logger->debug('Could not alter siblingNode "' . $siblingNodeName . '" to "div", reverting to original.');
                         $nodeToAppend = $siblingNode;
-                        --$s;
-                        --$sl;
                     }
                 } else {
                     $nodeToAppend = $siblingNode;
-                    --$s;
-                    --$sl;
                 }
 
                 // To ensure a node does not interfere with readability styles, remove its classnames & ids.
