@@ -332,9 +332,9 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
 
     public function testAutoClosingIframeNotThrowingException()
     {
-        $oldErrorReporting = error_reporting(\E_ALL | \E_STRICT);
+        $oldErrorReporting = error_reporting(\E_ALL);
         $oldDisplayErrors = ini_set('display_errors', true);
-        set_error_handler([$this, 'error2Exception'], \E_ALL | \E_STRICT);
+        set_error_handler([$this, 'error2Exception']);
 
         try {
             $data = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
