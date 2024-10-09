@@ -24,25 +24,60 @@ class Readability implements LoggerAwareInterface
     public const MIN_ARTICLE_LENGTH = 200;
     public const MIN_NODE_LENGTH = 80;
     public const MAX_LINK_DENSITY = 0.25;
-    public $convertLinksToFootnotes = false;
-    public $revertForcedParagraphElements = false;
-    public $articleTitle;
-    public $articleContent;
-    public $original_html;
+
     /**
-     * @var \DOMDocument
+     * @var bool
+     */
+    public $convertLinksToFootnotes = false;
+
+    /**
+     * @var bool
+     */
+    public $revertForcedParagraphElements = false;
+
+    /**
+     * @var ?\DOMElement
+     */
+    public $articleTitle;
+
+    /**
+     * @var ?\DOMElement
+     */
+    public $articleContent;
+
+    /**
+     * @var ?string
+     */
+    public $original_html;
+
+    /**
+     * @var ?\DOMDocument
      */
     public $dom;
-    // optional - URL where HTML was retrieved
+
+    /**
+     * @var ?string URL where HTML was retrieved
+     */
     public $url = null;
-    // preserves more content (experimental)
+
+    /**
+     * @var bool preserves more content (experimental)
+     */
     public $lightClean = true;
-    // no more used, keept to avoid BC
+
+    /**
+     * @var bool no more used, keept to avoid BC
+     */
     public $debug = false;
+
+    /**
+     * @var bool
+     */
     public $tidied = false;
 
     /**
-     * All of the regular expressions in use within readability.
+     * @var array<string, string> All of the regular expressions in use within readability.
+     *
      * Defined up here so we don't instantiate them repeatedly in loops.
      */
     public $regexps = [
@@ -57,10 +92,18 @@ class Readability implements LoggerAwareInterface
         'hasContent' => '/\S$/',
         'isNotVisible' => '/display\s*:\s*none/',
     ];
+
+    /**
+     * @var array<string>
+     */
     public $defaultTagsToScore = ['section', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'td', 'pre'];
-    // The commented out elements qualify as phrasing content but tend to be
-    // removed by readability when put into paragraphs, so we ignore them here.
+
+    /**
+     * @var array<string>
+     */
     public $phrasingElements = [
+        // The commented out elements qualify as phrasing content but tend to be
+        // removed by readability when put into paragraphs, so we ignore them here.
         // "CANVAS", "IFRAME", "SVG", "VIDEO",
         'ABBR', 'AUDIO', 'B', 'BDO', 'BR', 'BUTTON', 'CITE', 'CODE', 'DATA',
         'DATALIST', 'DFN', 'EM', 'EMBED', 'I', 'IMG', 'INPUT', 'KBD', 'LABEL',
@@ -68,6 +111,10 @@ class Readability implements LoggerAwareInterface
         'RUBY', 'SAMP', 'SCRIPT', 'SELECT', 'SMALL', 'SPAN', 'STRONG', 'SUB',
         'SUP', 'TEXTAREA', 'TIME', 'VAR', 'WBR',
     ];
+
+    /**
+     * @var array<string, bool|string>
+     */
     public $tidy_config = [
         'tidy-mark' => false,
         'vertical-space' => false,
@@ -92,20 +139,55 @@ class Readability implements LoggerAwareInterface
         'output-encoding' => 'utf8',
         'hide-comments' => true,
     ];
-    // article domain regexp for calibration
+
+    /**
+     * @var ?string article domain regexp for calibration
+     */
     protected $domainRegExp = null;
+
+    /**
+     * @var ?\DOMElement
+     */
     protected $body = null;
-    // Cache the body HTML in case we need to re-use it later
+
+    /**
+     * @var ?string Cache the body HTML in case we need to re-use it later
+     */
     protected $bodyCache = null;
-    // 1 | 2 | 4;   // Start with all processing flags set.
-    protected $flags = 7;
-    // indicates whether we were able to extract or not
+
+    /**
+     * @var int-mask-of<self::FLAG_*> start with all processing flags set
+     */
+    protected $flags = self::FLAG_STRIP_UNLIKELYS | self::FLAG_WEIGHT_ATTRIBUTES | self::FLAG_CLEAN_CONDITIONALLY;
+
+    /**
+     * @var bool indicates whether we were able to extract or not
+     */
     protected $success = false;
+
+    /**
+     * @var LoggerInterface
+     */
     protected $logger;
+
+    /**
+     * @var string
+     */
     protected $parser;
+
+    /**
+     * @var string
+     */
     protected $html;
+
+    /**
+     * @var bool
+     */
     protected $useTidy;
-    // raw HTML filters
+
+    /**
+     * @var array<string, string> raw HTML filters
+     */
     protected $pre_filters = [
         // remove spans as we redefine styles and they're probably special-styled
         '!</?span[^>]*>!is' => '',
@@ -118,7 +200,10 @@ class Readability implements LoggerAwareInterface
         // replace fonts to spans
         '!<(/?)font[^>]*>!is' => '<\\1span>',
     ];
-    // output HTML filters
+
+    /**
+     * @var array<string, string> output HTML filters
+     */
     protected $post_filters = [
         // replace excessive br's
         '/<br\s*\/?>\s*<p/i' => '<p',

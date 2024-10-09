@@ -338,7 +338,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $oldErrorReporting = error_reporting(\E_ALL);
         $oldDisplayErrors = ini_set('display_errors', '1');
         // dummy function to be used to the next test
-        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
+        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
             throw new \Exception($errstr, $errno);
         });
 
