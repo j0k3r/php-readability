@@ -325,7 +325,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     }
 
     // dummy function to be used to the next test
-    public function error2Exception($code, $string, $file, $line, $context)
+    public function error2Exception($code, $string, $file, $line)
     {
         throw new \Exception($string, $code);
     }
