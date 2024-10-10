@@ -668,10 +668,10 @@ class Readability implements LoggerAwareInterface
                         $this->logger->debug(' content length less than 6 chars, 0 embeds and either 0 images or more than 2 images');
                         $toRemove = true;
                     } elseif (!$isList && $weight < 25 && $linkDensity > 0.25) {
-                        $this->logger->debug(' weight is ' . $weight . ' < 25 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.25');
+                        $this->logger->debug(' weight is ' . $weight . ' < 25 and link density is ' . \sprintf('%.2f', $linkDensity) . ' > 0.25');
                         $toRemove = true;
                     } elseif ($a > 2 && ($weight >= 25 && $linkDensity > 0.5)) {
-                        $this->logger->debug('  more than 2 links and weight is ' . $weight . ' > 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
+                        $this->logger->debug('  more than 2 links and weight is ' . $weight . ' > 25 but link density is ' . \sprintf('%.2f', $linkDensity) . ' > 0.5');
                         $toRemove = true;
                     } elseif ($embedCount > 3) {
                         $this->logger->debug(' more than 3 embeds');
@@ -691,10 +691,10 @@ class Readability implements LoggerAwareInterface
                         $this->logger->debug('  content length less than 10 chars and 0 images, or more than 2 images');
                         $toRemove = true;
                     } elseif (!$isList && $weight < 25 && $linkDensity > 0.2) {
-                        $this->logger->debug('  weight is ' . $weight . ' lower than 0 and link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.2');
+                        $this->logger->debug('  weight is ' . $weight . ' lower than 0 and link density is ' . \sprintf('%.2f', $linkDensity) . ' > 0.2');
                         $toRemove = true;
                     } elseif ($weight >= 25 && $linkDensity > 0.5) {
-                        $this->logger->debug('  weight above 25 but link density is ' . sprintf('%.2f', $linkDensity) . ' > 0.5');
+                        $this->logger->debug('  weight above 25 but link density is ' . \sprintf('%.2f', $linkDensity) . ' > 0.5');
                         $toRemove = true;
                     } elseif ((1 === $embedCount && $contentLength < 75) || $embedCount > 1) {
                         $this->logger->debug('  1 embed and content length smaller than 75 chars, or more than one embed');
