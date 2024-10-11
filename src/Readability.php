@@ -546,12 +546,8 @@ class Readability implements LoggerAwareInterface
     /**
      * Get the inner text of a node.
      * This also strips out any excess whitespace to be found.
-     *
-     * @param \DOMElement $e
-     * @param bool        $normalizeSpaces (default: true)
-     * @param bool        $flattenLines    (default: false)
      */
-    public function getInnerText($e, bool $normalizeSpaces = true, bool $flattenLines = false): string
+    public function getInnerText(?\DOMNode $e, bool $normalizeSpaces = true, bool $flattenLines = false): string
     {
         if (null === $e || !isset($e->textContent) || '' === $e->textContent) {
             return '';
