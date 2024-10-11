@@ -302,8 +302,7 @@ class Readability implements LoggerAwareInterface
         $articleLinks = $articleContent->getElementsByTagName('a');
         $linkCount = 0;
 
-        for ($i = 0; $i < $articleLinks->length; ++$i) {
-            $articleLink = $articleLinks->item($i);
+        foreach ($articleLinks as $articleLink) {
             $footnoteLink = $articleLink->cloneNode(true);
             $refLink = $this->dom->createElement('a');
             $footnote = $this->dom->createElement('li');
@@ -383,8 +382,8 @@ class Readability implements LoggerAwareInterface
 
         // Remove service data-candidate attribute.
         $elems = $xpath->query('.//*[@data-candidate]', $articleContent);
-        for ($i = $elems->length - 1; $i >= 0; --$i) {
-            $elems->item($i)->removeAttribute('data-candidate');
+        foreach ($elems as $elem) {
+            $elem->removeAttribute('data-candidate');
         }
 
         // Clean out junk from the article content.
@@ -520,11 +519,12 @@ class Readability implements LoggerAwareInterface
         $textLength = mb_strlen($this->getInnerText($e, true, true));
         $linkLength = 0;
 
-        for ($dRe = $this->domainRegExp, $i = 0, $il = $links->length; $i < $il; ++$i) {
-            if ($excludeExternal && $dRe && !preg_match($dRe, $links->item($i)->getAttribute('href'))) {
+        $dRe = $this->domainRegExp;
+        foreach ($links as $link) {
+            if ($excludeExternal && $dRe && !preg_match($dRe, $link->getAttribute('href'))) {
                 continue;
             }
-            $linkLength += mb_strlen($this->getInnerText($links->item($i)));
+            $linkLength += mb_strlen($this->getInnerText($link));
         }
 
         if ($textLength > 0 && $linkLength > 0) {
@@ -586,7 +586,7 @@ class Readability implements LoggerAwareInterface
                 }
 
                 // Then check the elements inside this element for the same.
-                if (preg_match($this->regexps['media'], $targetList->item($y)->getInnerHTML())) {
+                if (preg_match($this->regexps['media'], $currentItem->getInnerHTML())) {
                     continue;
                 }
             }
@@ -640,15 +640,15 @@ class Readability implements LoggerAwareInterface
                 $embedCount = 0;
                 $embeds = $node->getElementsByTagName('embed');
 
-                for ($ei = 0, $il = $embeds->length; $ei < $il; ++$ei) {
-                    if (preg_match($this->regexps['media'], $embeds->item($ei)->getAttribute('src'))) {
+                foreach ($embeds as $embed) {
+                    if (preg_match($this->regexps['media'], $embed->getAttribute('src'))) {
                         ++$embedCount;
                     }
                 }
 
                 $embeds = $node->getElementsByTagName('iframe');
-                for ($ei = 0, $il = $embeds->length; $ei < $il; ++$ei) {
-                    if (preg_match($this->regexps['media'], $embeds->item($ei)->getAttribute('src'))) {
+                foreach ($embeds as $embed) {
+                    if (preg_match($this->regexps['media'], $embed->getAttribute('src'))) {
                         ++$embedCount;
                     }
                 }
@@ -719,8 +719,9 @@ class Readability implements LoggerAwareInterface
             $headers = $e->getElementsByTagName('h' . $headerIndex);
 
             for ($i = $headers->length - 1; $i >= 0; --$i) {
-                if ($this->getWeight($headers->item($i)) < 0 || $this->getLinkDensity($headers->item($i)) > 0.33) {
-                    $headers->item($i)->parentNode->removeChild($headers->item($i));
+                $header = $headers->item($i);
+                if ($this->getWeight($header) < 0 || $this->getLinkDensity($header) > 0.33) {
+                    $header->parentNode->removeChild($header);
                 }
             }
         }
@@ -812,12 +813,14 @@ class Readability implements LoggerAwareInterface
         // Remove all style tags in head.
         $styleTags = $this->dom->getElementsByTagName('style');
         for ($i = $styleTags->length - 1; $i >= 0; --$i) {
-            $styleTags->item($i)->parentNode->removeChild($styleTags->item($i));
+            $styleTag = $styleTags->item($i);
+            $styleTag->parentNode->removeChild($styleTag);
         }
 
         $linkTags = $this->dom->getElementsByTagName('link');
         for ($i = $linkTags->length - 1; $i >= 0; --$i) {
-            $linkTags->item($i)->parentNode->removeChild($linkTags->item($i));
+            $linkTag = $linkTags->item($i);
+            $linkTag->parentNode->removeChild($linkTag);
         }
     }
 
@@ -1015,15 +1018,15 @@ class Readability implements LoggerAwareInterface
          * A score is determined by things like number of commas, class names, etc.
          * Maybe eventually link density.
          */
-        for ($pt = 0, $scored = \count($nodesToScore); $pt < $scored; ++$pt) {
-            $ancestors = $this->getAncestors($nodesToScore[$pt], 5);
+        foreach ($nodesToScore as $nodeToScore) {
+            $ancestors = $this->getAncestors($nodeToScore, 5);
 
             // No parent node? Move on...
             if (0 === \count($ancestors)) {
                 continue;
             }
 
-            $innerText = $this->getInnerText($nodesToScore[$pt]);
+            $innerText = $this->getInnerText($nodeToScore);
 
             // If this paragraph is less than MIN_PARAGRAPH_LENGTH (default:20) characters, don't even count it.
             if (mb_strlen($innerText) < self::MIN_PARAGRAPH_LENGTH) {
@@ -1076,11 +1079,6 @@ class Readability implements LoggerAwareInterface
                 }
             }
 
-            $candidates = $xpath->query('.//*[not(self::body) and (@class or @id or @style) and ((number(@readability) < 40) or not(@readability))]', $page->documentElement);
-
-            for ($c = $candidates->length - 1; $c >= 0; --$c) {
-                $node = $candidates->item($c);
-            }
             unset($candidates);
         }
 
@@ -1230,11 +1228,6 @@ class Readability implements LoggerAwareInterface
         $siblingScoreThreshold = max(10, ((int) $topCandidate->getAttribute('readability')) * 0.2);
         $parentOfTopCandidate = $topCandidate->parentNode;
         $siblingNodes = $parentOfTopCandidate->childNodes;
-
-        if (0 === $siblingNodes->length) {
-            $siblingNodes = new \stdClass();
-            $siblingNodes->length = 0;
-        }
 
         for ($s = 0, $sl = $siblingNodes->length; $s < $sl; ++$s) {
             $siblingNode = $siblingNodes->item($s);
