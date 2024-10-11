@@ -249,6 +249,10 @@ class Readability implements LoggerAwareInterface
      */
     public function getTitle()
     {
+        if (null === $this->articleTitle) {
+            throw new \BadMethodCallException('You need to successfully run Readability::init() before you can get title');
+        }
+
         return $this->articleTitle;
     }
 
@@ -259,6 +263,10 @@ class Readability implements LoggerAwareInterface
      */
     public function getContent()
     {
+        if (null === $this->articleContent) {
+            throw new \BadMethodCallException('You need to successfully run Readability::init() before you can get content');
+        }
+
         return $this->articleContent;
     }
 
