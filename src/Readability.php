@@ -474,6 +474,7 @@ class Readability implements LoggerAwareInterface
         }
 
         // Remove service data-candidate attribute.
+        /** @var \DOMNodeList<\DOMElement> */
         $elems = $xpath->query('.//*[@data-candidate]', $articleContent);
         foreach ($elems as $elem) {
             $elem->removeAttribute('data-candidate');
@@ -1159,6 +1160,7 @@ class Readability implements LoggerAwareInterface
          * This is faster to do before scoring but safer after.
          */
         if ($this->flagIsActive(self::FLAG_STRIP_UNLIKELYS) && $xpath) {
+            /** @var \DOMNodeList<\DOMElement> */
             $candidates = $xpath->query('.//*[(self::footer and count(//footer)<2) or (self::aside and count(//aside)<2)]', $page->documentElement);
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
@@ -1180,6 +1182,7 @@ class Readability implements LoggerAwareInterface
         $topCandidates = array_fill(0, 5, null);
         if ($xpath) {
             // Using array of DOMElements after deletion is a path to DOOMElement.
+            /** @var \DOMNodeList<\DOMElement> */
             $candidates = $xpath->query('.//*[@data-candidate]', $page->documentElement);
             $this->logger->debug('Candidates: ' . $candidates->length);
 
