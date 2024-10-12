@@ -308,7 +308,7 @@ class Readability implements LoggerAwareInterface
     {
         $this->loadHtml();
 
-        if (!isset($this->dom->documentElement)) {
+        if (null === $this->dom || null === $this->dom->documentElement) {
             return false;
         }
 
@@ -400,7 +400,7 @@ class Readability implements LoggerAwareInterface
             $refLink = $this->dom->createElement('a');
             $footnote = $this->dom->createElement('li');
             $linkDomain = @parse_url($footnoteLink->getAttribute('href'), \PHP_URL_HOST);
-            if (!$linkDomain && isset($this->url)) {
+            if (!$linkDomain && null !== $this->url) {
                 $linkDomain = @parse_url($this->url, \PHP_URL_HOST);
             }
 
@@ -1223,15 +1223,16 @@ class Readability implements LoggerAwareInterface
             $topCandidate = $this->dom->createElement('div');
 
             if ($page instanceof \DOMDocument) {
-                if (!isset($page->documentElement)) {
+                $documentElement = $page->documentElement;
+                if (null === $documentElement) {
                     // we don't have a body either? what a mess! :)
                     $this->logger->debug('The page has no body!');
                 } else {
                     $this->logger->debug('Setting body to a raw HTML of original page!');
-                    $topCandidate->setInnerHtml($page->documentElement->getInnerHTML());
-                    $page->documentElement->setInnerHtml('');
+                    $topCandidate->setInnerHtml($documentElement->getInnerHTML());
+                    $documentElement->setInnerHtml('');
                     $this->reinitBody();
-                    $page->documentElement->appendChild($topCandidate);
+                    $documentElement->appendChild($topCandidate);
                 }
             } else {
                 $topCandidate->setInnerHtml($page->getInnerHTML());
@@ -1457,7 +1458,7 @@ class Readability implements LoggerAwareInterface
      */
     protected function reinitBody(): void
     {
-        if (!isset($this->body->childNodes)) {
+        if (null === $this->body) {
             $this->body = $this->dom->createElement('body');
             $this->body->setInnerHtml($this->bodyCache);
         }
