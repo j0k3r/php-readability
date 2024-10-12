@@ -8,9 +8,23 @@ parameters:
     bootstrapFiles:
         - vendor/bin/.phpunit/phpunit/vendor/autoload.php
 
-    stubFiles:
-        - stubs/dom.stub
-
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+
+services:
+    -
+        class: Readability\Maintenance\PHPStan\DOMDocumentGetElementDynamicReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension
+
+    -
+        class: Readability\Maintenance\PHPStan\DOMDocumentGetElementsDynamicReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension
+
+    -
+        class: Readability\Maintenance\PHPStan\DOMElementGetElementsDynamicReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension

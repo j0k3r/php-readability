@@ -844,7 +844,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Get the article title as an H1.
      *
-     * @return \DOMElement
+     * @return JSLikeHTMLElement
      */
     protected function getArticleTitle()
     {
