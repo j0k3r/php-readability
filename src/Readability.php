@@ -987,9 +987,9 @@ class Readability implements LoggerAwareInterface
      * Using a variety of metrics (content score, classname, element types), find the content that is
      * most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
      *
-     * @return \DOMElement|false
+     * @return JSLikeHTMLElement|false
      */
-    protected function grabArticle(?\DOMElement $page = null)
+    protected function grabArticle(?JSLikeHTMLElement $page = null)
     {
         if (!$page) {
             $page = $this->dom;
@@ -1166,7 +1166,7 @@ class Readability implements LoggerAwareInterface
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $node = $candidates->item($c);
                 // node should be readable but not inside of an article otherwise it's probably non-readable block
-                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode instanceof \DOMElement ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
+                if ($node->hasAttribute('readability') && (int) $node->getAttributeNode('readability')->value < 40 && ($node->parentNode instanceof JSLikeHTMLElement ? 0 !== strcasecmp($node->parentNode->tagName, 'article') : true)) {
                     $this->logger->debug('Removing unlikely candidate (using note) ' . $node->getNodePath() . ' by "' . $node->tagName . '" with readability ' . self::getContentScore($node));
                     $node->parentNode->removeChild($node);
                 }
@@ -1302,7 +1302,7 @@ class Readability implements LoggerAwareInterface
         if (0 === strcasecmp($tagName, 'td') || 0 === strcasecmp($tagName, 'tr')) {
             $up = $topCandidate;
 
-            if ($up->parentNode instanceof \DOMElement) {
+            if ($up->parentNode instanceof JSLikeHTMLElement) {
                 $up = $up->parentNode;
 
                 if (0 === strcasecmp($up->tagName, 'table')) {
@@ -1327,7 +1327,7 @@ class Readability implements LoggerAwareInterface
             $siblingNode = $siblingNodes->item($s);
             $siblingNodeName = $siblingNode->nodeName;
             $append = false;
-            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . (($siblingNode instanceof \DOMElement && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
+            $this->logger->debug('Looking at sibling node: ' . $siblingNode->getNodePath() . (($siblingNode instanceof JSLikeHTMLElement && $siblingNode->hasAttribute('readability')) ? (' with score ' . $siblingNode->getAttribute('readability')) : ''));
 
             if ($siblingNode->isSameNode($topCandidate)) {
                 $append = true;
@@ -1335,11 +1335,11 @@ class Readability implements LoggerAwareInterface
                 $contentBonus = 0;
 
                 // Give a bonus if sibling nodes and top candidates have the same classname.
-                if ($siblingNode instanceof \DOMElement && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
+                if ($siblingNode instanceof JSLikeHTMLElement && $siblingNode->getAttribute('class') === $topCandidate->getAttribute('class') && '' !== $topCandidate->getAttribute('class')) {
                     $contentBonus += ((int) $topCandidate->getAttribute('readability')) * 0.2;
                 }
 
-                if ($siblingNode instanceof \DOMElement && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
+                if ($siblingNode instanceof JSLikeHTMLElement && $siblingNode->hasAttribute('readability') && (((int) $siblingNode->getAttribute('readability')) + $contentBonus) >= $siblingScoreThreshold) {
                     $append = true;
                 } elseif (0 === strcasecmp($siblingNodeName, 'p')) {
                     $linkDensity = (int) $this->getLinkDensity($siblingNode);
@@ -1426,7 +1426,7 @@ class Readability implements LoggerAwareInterface
      * Get an element weight by attribute.
      * Uses regular expressions to tell if this element looks good or bad.
      */
-    protected function weightAttribute(\DOMElement $element, string $attribute): int
+    protected function weightAttribute(JSLikeHTMLElement $element, string $attribute): int
     {
         if (!$element->hasAttribute($attribute)) {
             return 0;
@@ -1470,7 +1470,7 @@ class Readability implements LoggerAwareInterface
      *
      * @param callable(float): float $f
      */
-    private static function updateContentScore(\DOMElement $element, callable $f): void
+    private static function updateContentScore(JSLikeHTMLElement $element, callable $f): void
     {
         $readabilityAttr = $element->getAttributeNode('readability');
         $prevScore = (float) $readabilityAttr->value;
@@ -1480,7 +1480,7 @@ class Readability implements LoggerAwareInterface
     /**
      * Gets the content score for given element.
      */
-    private static function getContentScore(\DOMElement $element): float
+    private static function getContentScore(JSLikeHTMLElement $element): float
     {
         return $element->hasAttribute('readability') ? (float) $element->getAttribute('readability') : 0;
     }
@@ -1552,11 +1552,11 @@ class Readability implements LoggerAwareInterface
         $this->dom->registerNodeClass(\DOMElement::class, JSLikeHTMLElement::class);
     }
 
-    private function getAncestors(\DOMElement $node, int $maxDepth = 0): array
+    private function getAncestors(JSLikeHTMLElement $node, int $maxDepth = 0): array
     {
         $ancestors = [];
         $i = 0;
-        while ($node->parentNode instanceof \DOMElement) {
+        while ($node->parentNode instanceof JSLikeHTMLElement) {
             $ancestors[] = $node->parentNode;
             if (++$i === $maxDepth) {
                 break;
@@ -1589,10 +1589,10 @@ class Readability implements LoggerAwareInterface
      * Returns false if `$node` contains non-empty text nodes
      * or if it contains no element with given tag or more than 1 element.
      */
-    private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
+    private function hasSingleTagInsideElement(JSLikeHTMLElement $node, string $tag): bool
     {
         $childNodes = iterator_to_array($node->childNodes);
-        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof \DOMElement);
+        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof JSLikeHTMLElement);
 
         // There should be exactly 1 element child with given tag
         if (1 !== \count($children) || $children[0]->nodeName !== $tag) {
@@ -1613,7 +1613,7 @@ class Readability implements LoggerAwareInterface
      * Tidy must be configured to not clean the input for this function to
      * work as expected, see $this->tidy_config['clean']
      */
-    private function isNodeVisible(\DOMElement $node): bool
+    private function isNodeVisible(JSLikeHTMLElement $node): bool
     {
         return !(
             $node->hasAttribute('style')
