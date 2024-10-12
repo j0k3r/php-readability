@@ -146,7 +146,7 @@ class Readability implements LoggerAwareInterface
     protected $domainRegExp = null;
 
     /**
-     * @var ?\JSLikeHTMLElement
+     * @var ?JSLikeHTMLElement
      */
     protected $body = null;
 
