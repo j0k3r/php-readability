@@ -11,14 +11,18 @@ class DOMDocument
     /** @var JSLikeHTMLElement|null */
     public $documentElement;
 
-    /** @var null */
-    public $ownerDocument;
-
     /**
      * @param string $name
      * @return DOMNodeList<JSLikeHTMLElement>
      */
     public function getElementsByTagName($name) {}
+
+    /**
+     * @param string $localName
+     * @param string $value
+     * @return JSLikeHTMLElement Officially, this can return false but PHPStan decided to ignore that: <https://github.com/phpstan/phpstan-src/pull/1569>
+     */
+    public function createElement($localName, $value = '') {}
 }
 
 class DOMNode

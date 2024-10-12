@@ -146,7 +146,7 @@ class Readability implements LoggerAwareInterface
     protected $domainRegExp = null;
 
     /**
-     * @var ?\DOMElement
+     * @var ?\JSLikeHTMLElement
      */
     protected $body = null;
 
@@ -603,7 +603,7 @@ class Readability implements LoggerAwareInterface
      * This is the amount of text that is inside a link divided by the total text in the node.
      * Can exclude external references to differentiate between simple text and menus/infoblocks.
      */
-    public function getLinkDensity(\DOMElement $e, bool $excludeExternal = false): float
+    public function getLinkDensity(JSLikeHTMLElement $e, bool $excludeExternal = false): float
     {
         $links = $e->getElementsByTagName('a');
         $textLength = mb_strlen($this->getInnerText($e, true, true));
