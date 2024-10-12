@@ -572,12 +572,10 @@ class Readability implements LoggerAwareInterface
      */
     public function cleanStyles(\DOMElement $e): void
     {
-        if (\is_object($e)) {
-            $elems = $e->getElementsByTagName('*');
+        $elems = $e->getElementsByTagName('*');
 
-            foreach ($elems as $elem) {
-                $elem->removeAttribute('style');
-            }
+        foreach ($elems as $elem) {
+            $elem->removeAttribute('style');
         }
     }
 
