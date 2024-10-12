@@ -113,7 +113,7 @@ class Readability implements LoggerAwareInterface
     ];
 
     /**
-     * @var array<string, bool|string>
+     * @var array<string, bool|int|string>
      */
     public $tidy_config = [
         'tidy-mark' => false,
