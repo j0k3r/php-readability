@@ -22,6 +22,7 @@ return (new PhpCsFixer\Config())
         'ordered_imports' => true,
         'php_unit_strict' => false,
         'phpdoc_order' => true,
+        'phpdoc_to_param_type' => true,
         // 'psr4' => true,
         'strict_comparison' => true,
         'strict_param' => true,
