@@ -1223,6 +1223,7 @@ class Readability implements LoggerAwareInterface
             $topCandidate = $this->dom->createElement('div');
 
             if ($page instanceof \DOMDocument) {
+                /** @var JSLikeHTMLElement|null $documentElement (overridden by registerNodeClass) */
                 $documentElement = $page->documentElement;
                 if (null === $documentElement) {
                     // we don't have a body either? what a mess! :)
