@@ -40,7 +40,7 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "none"
-          tools: composer:v1
+          tools: composer:v2
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
@@ -86,7 +86,7 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "xdebug"
-          tools: composer:v1
+          tools: composer:v2
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
@@ -139,7 +139,7 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "none"
-          tools: composer:v1
+          tools: composer:v2
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
@@ -163,7 +163,7 @@ jobs:
           SYMFONY_PHPUNIT_VERSION: 7.5
 
   phpunit-composerv2:
-    name: "PHPUnit with Composer v2 (PHP ${{ matrix.php }})"
+    name: "PHPUnit with Composer v1 (PHP ${{ matrix.php }})"
     runs-on: "ubuntu-20.04"
 
     strategy:
@@ -182,7 +182,7 @@ jobs:
         with:
           php-version: "${{ matrix.php }}"
           coverage: "none"
-          tools: composer:v2
+          tools: composer:v1
           extensions: tidy
           ini-values: "date.timezone=Europe/Paris"
         env:
