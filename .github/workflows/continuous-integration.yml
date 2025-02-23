@@ -46,12 +46,6 @@ jobs:
         env:
           COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Force PHPUnit version"
-        if: matrix.php >= '7.2'
-        run: "echo $SYMFONY_PHPUNIT_VERSION"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
-
       - name: "Remove useless deps"
         run: "composer remove friendsofphp/php-cs-fixer --dev --no-progress --no-update"
 
@@ -105,8 +99,6 @@ jobs:
 
       - name: "Run PHPUnit (with coverage)"
         run: "php vendor/bin/simple-phpunit -v --coverage-clover build/logs/clover.xml"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
 
       - name: "Retrieve Coveralls phar"
         run: "wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.4.2/php-coveralls.phar"
@@ -159,8 +151,6 @@ jobs:
 
       - name: "Run PHPUnit"
         run: "php vendor/bin/simple-phpunit -v"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
 
   phpunit-composerv2:
     name: "PHPUnit with Composer v1 (PHP ${{ matrix.php }})"
@@ -201,5 +191,3 @@ jobs:
 
       - name: "Run PHPUnit"
         run: "php vendor/bin/simple-phpunit -v"
-        env:
-          SYMFONY_PHPUNIT_VERSION: 7.5
