@@ -8,8 +8,6 @@ parameters:
     bootstrapFiles:
         - vendor/bin/.phpunit/phpunit/vendor/autoload.php
 
-    checkMissingIterableValueType: false
-
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
