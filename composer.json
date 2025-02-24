@@ -32,7 +32,7 @@
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.14",
         "monolog/monolog": "^1.24|^2.1",
-        "symfony/phpunit-bridge": "^4.4|^5.3"
+        "symfony/phpunit-bridge": "^4.4|^5.3|^6.0|^7.0"
     },
     "suggest": {
         "ext-tidy": "Used to clean up given HTML and to avoid problems with bad HTML structure."
@@ -42,5 +42,10 @@
     },
     "autoload-dev": {
         "psr-4": { "Tests\\Readability\\": "tests/" }
+    },
+    "scripts": {
+        "fix": "php-cs-fixer fix --verbose --diff",
+        "phpstan": "phpstan analyze --memory-limit 512M",
+        "test": "simple-phpunit -v"
     }
 }
