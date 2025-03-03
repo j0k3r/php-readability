@@ -30,6 +30,10 @@ return (new PhpCsFixer\Config())
         'no_null_property_initialization' => false,
         // Pulled in by @Symfony with `const` but const visibility requires PHP ≥ 7.1
         'visibility_required' => ['elements' => ['method', 'property']],
+        // Pulled in by @Symfony:risky but we still support PHP ≤ 7.4
+        'modernize_strpos' => false,
+        // Enabled by @Symfony:risky but requires PHP 8.
+        'get_class_to_class_keyword' => false,
     ])
     ->setFinder($finder)
 ;
