@@ -19,7 +19,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability = $this->getReadability('');
 
         $this->assertNull($readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
     }
 
     public function testConstructHtml5Parser()
@@ -27,7 +27,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability = $this->getReadability('<html/>', 'http://0.0.0.0', 'html5lib');
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
     }
 
@@ -39,7 +39,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability = $this->getReadability('<html/>', 'http://0.0.0.0');
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
         $this->assertTrue($readability->tidied);
     }
@@ -52,7 +52,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('', $readability->original_html);
         $this->assertFalse($readability->tidied);
 
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
     }
 
     public function testConstructSimpleWithoutTidy()
@@ -60,7 +60,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability = $this->getReadability('<html/>', 'http://0.0.0.0', 'libxml', false);
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
         $this->assertFalse($readability->tidied);
     }
