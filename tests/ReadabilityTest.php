@@ -24,7 +24,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertNull($readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
     }
 
     public function testConstructHtml5Parser(): void
@@ -33,7 +33,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
     }
 
@@ -46,7 +46,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
         $this->assertTrue($readability->tidied);
     }
@@ -60,7 +60,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('', $readability->original_html);
         $this->assertFalse($readability->tidied);
 
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
     }
 
     public function testConstructSimpleWithoutTidy(): void
@@ -69,7 +69,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
         $this->assertFalse($readability->tidied);
     }
