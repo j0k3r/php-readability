@@ -1396,7 +1396,10 @@ class Readability implements LoggerAwareInterface
         $this->logger->debug('Parsing URL: ' . $this->url);
 
         if ($this->url) {
-            $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', parse_url($this->url, \PHP_URL_HOST)), ['.' => '\.']) . '/';
+            $host = parse_url($this->url, \PHP_URL_HOST);
+            if (null !== $host) {
+                $this->domainRegExp = '/' . strtr(preg_replace('/www\d*\./', '', $host), ['.' => '\.']) . '/';
+            }
         }
 
         mb_internal_encoding('UTF-8');
@@ -1432,7 +1435,7 @@ class Readability implements LoggerAwareInterface
             unset($tidy);
         }
 
-        $this->html = '<meta charset="utf-8">' . (string) $this->html;
+        $this->html = self::ensureMetaCharset((string) $this->html);
 
         if ('html5lib' === $this->parser || 'html5' === $this->parser) {
             $this->dom = (new HTML5())->loadHTML($this->html);
@@ -1449,5 +1452,46 @@ class Readability implements LoggerAwareInterface
         }
 
         $this->dom->registerNodeClass('DOMElement', 'Readability\JSLikeHTMLElement');
+    }
+
+    /**
+     * Tries to insert `meta[charset]` tag into the proper place in the passed HTML document.
+     *
+     * `DOMDocument::loadHTML` will parse HTML documents as ISO-8859-1 if there is no `meta[charset]` tag.
+     * This means that UTF-8-encoded HTML fragments such as those coming from JSON-LD `articleBody` field would be parsed with incorrect encoding.
+     * Unfortunately, we cannot just put the tag at the start of the HTML fragment, since that would cause parser to auto-insert a `html` element, losing the attributes of the original `html` tag.
+     *
+     * @param string $html UTF-8 encoded document
+     */
+    private static function ensureMetaCharset($html)
+    {
+        $charsetTag = '<meta charset="utf-8">';
+
+        // Only look at first 1024 bytes since, according to HTML5 specification,
+        // that’s where <meta> elements declaring a character encoding must be located.
+        // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta#charset
+        $start = substr($html, 0, 1000);
+
+        if (1 === preg_match('/<meta[^>]+charset/i', $start)) {
+            // <meta> tag is already present, no need for modification.
+            return $html;
+        }
+
+        if (1 === preg_match('/<head[^>]*>/i', $start)) {
+            // <head> tag was located, <meta> tags go there.
+            $html = preg_replace('/<head[^>]*>/i', '$0' . $charsetTag, $html, 1);
+
+            return $html;
+        }
+
+        if (1 === preg_match('/<html[^>]*>/i', $start)) {
+            // <html> tag was located, let’s put it inside and have parser create <head>.
+            $html = preg_replace('/<html[^>]*>/i', '$0' . $charsetTag, $html, 1);
+
+            return $html;
+        }
+
+        // Fallback – just plop the <meta> at the start of the fragment.
+        return $charsetTag . $html;
     }
 }
