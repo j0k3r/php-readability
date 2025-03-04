@@ -1207,13 +1207,13 @@ class Readability implements LoggerAwareInterface
             }
         }
 
-        /** @var \DOMNodeList<\DOMElement> */
         $topCandidates = array_filter(
             $topCandidates,
             fn ($v, $idx) => 0 === $idx || null !== $v,
             \ARRAY_FILTER_USE_BOTH
         );
         $topCandidate = $topCandidates[0];
+                \PHPStan\dumpType($topCandidates);
 
         /*
          * If we still have no top candidate, just use the body as a last resort.
@@ -1264,11 +1264,17 @@ class Readability implements LoggerAwareInterface
                     }
                     $parentOfTopCandidate = $parentOfTopCandidate->parentNode;
                 }
+                // For PHPStan: the loop terminates either when the parent node is body (a HTML element),
+                // or when $parentOfTopCandidate is in at least three candidate ancestor lists.
+                // TODO: Fuzz this.
+                \assert($parentOfTopCandidate instanceof JSLikeHTMLElement);
+                \assert($topCandidate instanceof JSLikeHTMLElement);
             }
             if (!$topCandidate->hasAttribute('readability')) {
                 $this->initializeNode($topCandidate);
             }
             $parentOfTopCandidate = $topCandidate->parentNode;
+            \assert($parentOfTopCandidate instanceof JSLikeHTMLElement);
             $lastScore = (int) $topCandidate->getAttribute('readability');
             $scoreThreshold = $lastScore / 3;
             while ('body' !== $parentOfTopCandidate->nodeName) {
@@ -1552,6 +1558,9 @@ class Readability implements LoggerAwareInterface
         $this->dom->registerNodeClass(\DOMElement::class, JSLikeHTMLElement::class);
     }
 
+    /**
+     * @return array<JSLikeHTMLElement>
+     */
     private function getAncestors(JSLikeHTMLElement $node, int $maxDepth = 0): array
     {
         $ancestors = [];
