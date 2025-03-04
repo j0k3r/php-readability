@@ -24,7 +24,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertNull($readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
     }
 
     public function testConstructHtml5Parser(): void
@@ -33,7 +33,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
     }
 
@@ -46,7 +46,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
         $this->assertTrue($readability->tidied);
     }
@@ -60,7 +60,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('', $readability->original_html);
         $this->assertFalse($readability->tidied);
 
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
     }
 
     public function testConstructSimpleWithoutTidy(): void
@@ -69,7 +69,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $readability->init();
 
         $this->assertSame('http://0.0.0.0', $readability->url);
-        $this->assertInstanceOf('DomDocument', $readability->dom);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame('<html/>', $readability->original_html);
         $this->assertFalse($readability->tidied);
     }
@@ -115,7 +115,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testInitDiv(): void
     {
         $readability = $this->getReadability('<div>' . str_repeat('This is the awesome content :)', 7) . '</div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -129,7 +128,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithFootnotes(): void
     {
         $readability = $this->getReadability('<div>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '</div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->convertLinksToFootnotes = true;
         $res = $readability->init();
 
@@ -146,7 +144,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testStandardClean(): void
     {
         $readability = $this->getReadability('<div><h2>Title</h2>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<a href="#nofollow" rel="nofollow">will NOT be removed</a></div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->lightClean = false;
         $res = $readability->init();
 
@@ -163,7 +160,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithIframe(): void
     {
         $readability = $this->getReadability('<div><h2>Title</h2>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<p>This is an awesome text with some links, here there are <iframe src="http://youtube.com/test" href="#nofollow" rel="nofollow"></iframe><iframe>http://soundcloud.com/test</iframe></p></div>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -178,7 +174,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithArticle(): void
     {
         $readability = $this->getReadability('<article><p>' . str_repeat('This is an awesome text with some links, here there are: the awesome', 20) . '</p><p>This is an awesome text with some links, here there are <iframe src="http://youtube.com/test" href="#nofollow" rel="nofollow"></iframe></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -193,7 +188,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithAside(): void
     {
         $readability = $this->getReadability('<article>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<footer><aside>' . str_repeat('<p>This is an awesome text with some links, here there are</p>', 8) . '</aside></footer></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -208,7 +202,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithClasses(): void
     {
         $readability = $this->getReadability('<article>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<div style="display:none">' . str_repeat('<p class="clock">This text should be removed</p>', 10) . '</div></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -223,7 +216,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithClassesWithoutLightClean(): void
     {
         $readability = $this->getReadability('<article>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<div style="display:none">' . str_repeat('<p class="clock">This text should be removed</p>', 10) . '</div></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->lightClean = false;
         $res = $readability->init();
 
@@ -239,7 +231,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithTd(): void
     {
         $readability = $this->getReadability('<table><tr>' . str_repeat('<td><p>This is an awesome text with some links, here there are the awesome</td>', 7) . '</tr></table>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -252,7 +243,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithSameClasses(): void
     {
         $readability = $this->getReadability('<article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<div class="awesomecontent">This text is also an awesome text and you should know that !</div></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -266,7 +256,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testWithScript(): void
     {
         $readability = $this->getReadability('<article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p><script>This text is also an awesome text and you should know that !</script></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -280,7 +269,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitle(): void
     {
         $readability = $this->getReadability('<title>this is my title</title><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -294,7 +282,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitleWithDash(): void
     {
         $readability = $this->getReadability('<title> title2 - title3 </title><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -308,7 +295,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitleWithDoubleDot(): void
     {
         $readability = $this->getReadability('<title> title2 : title3 </title><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -322,7 +308,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testTitleTooShortUseH1(): void
     {
         $readability = $this->getReadability('<title>too short</title><h1>this is my h1 title !</h1><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -369,7 +354,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
                 </html>';
 
             $readability = $this->getReadability($data, 'http://iosgames.ru/?p=22030');
-            $readability->debug = true;
 
             $res = $readability->init();
 
@@ -437,7 +421,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
             </html>';
 
         $readability = $this->getReadability($data, 'http://0.0.0.0');
-        $readability->debug = true;
 
         $res = $readability->init();
 
@@ -474,7 +457,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $html = (string) file_get_contents('tests/fixtures/childNodeGoesNull.html');
 
         $readability = $this->getReadability($html, 'http://0.0.0.0');
-        $readability->debug = true;
         $readability->convertLinksToFootnotes = true;
         $res = $readability->init();
 
@@ -487,7 +469,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $html = (string) file_get_contents('tests/fixtures/keepFootnotes.html');
 
         $readability = $this->getReadability($html, 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -501,7 +482,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $html = (string) file_get_contents('tests/fixtures/wipedBody.html');
 
         $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', false);
-        $readability->debug = true;
         $res = $readability->init();
 
         $this->assertTrue($res);
@@ -540,7 +520,6 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testVisibleNode(string $content, bool $shouldBeVisible): void
     {
         $readability = $this->getReadability($content, 'http://0.0.0.0');
-        $readability->debug = true;
         $res = $readability->init();
 
         if ($shouldBeVisible) {
@@ -548,6 +527,48 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         } else {
             $this->assertStringNotContainsString('WONDERFUL content', $readability->getContent()->getInnerHtml());
         }
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string, 2?: bool}>
+     */
+    public function dataForHtmlLang(): array
+    {
+        return [
+            'meta' => [
+                '<html lang="fr"><head><meta charset="utf-8"></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                'fr',
+            ],
+            'head' => [
+                '<html lang="fr"><head><title>Foo</title></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                'fr',
+            ],
+            'headless' => [
+                '<html lang="fr"><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                'fr',
+                // tidy would add <head> tag.
+                false,
+            ],
+            'fragment' => [
+                '<article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article>',
+                '',
+                // tidy would add <html>.
+                false,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider dataForHtmlLang
+     */
+    public function testHtmlLang(string $html, string $lang, bool $useTidy = true): void
+    {
+        $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', $useTidy);
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
+        $this->assertSame($lang, $readability->dom->documentElement->getAttribute('lang'));
     }
 
     private function getReadability(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
