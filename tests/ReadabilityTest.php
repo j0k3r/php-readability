@@ -529,6 +529,48 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    /**
+     * @return array<string, array{0: string, 1: string, 2?: bool}>
+     */
+    public function dataForHtmlLang(): array
+    {
+        return [
+            'meta' => [
+                '<html lang="fr"><head><meta charset="utf-8"></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                'fr',
+            ],
+            'head' => [
+                '<html lang="fr"><head><title>Foo</title></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                'fr',
+            ],
+            'headless' => [
+                '<html lang="fr"><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                'fr',
+                // tidy would add <head> tag.
+                false,
+            ],
+            'fragment' => [
+                '<article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article>',
+                '',
+                // tidy would add <html>.
+                false,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider dataForHtmlLang
+     */
+    public function testHtmlLang(string $html, string $lang, bool $useTidy = true): void
+    {
+        $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', $useTidy);
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
+        $this->assertSame($lang, $readability->dom->documentElement->getAttribute('lang'));
+    }
+
     private function getReadability(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
     {
         $readability = new Readability($html, $url, $parser, $useTidy);
