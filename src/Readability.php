@@ -1383,7 +1383,10 @@ class Readability implements LoggerAwareInterface
         $this->logger->debug('Parsing URL: ' . $this->url);
 
         if ($this->url) {
-            $this->domainRegExp = '/' . strtr((string) preg_replace('/www\d*\./', '', (string) parse_url($this->url, \PHP_URL_HOST)), ['.' => '\.']) . '/';
+            $host = parse_url($this->url, \PHP_URL_HOST);
+            if (null !== $host) {
+                $this->domainRegExp = '/' . strtr((string) preg_replace('/www\d*\./', '', $host), ['.' => '\.']) . '/';
+            }
         }
 
         mb_internal_encoding('UTF-8');
