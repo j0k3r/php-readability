@@ -2,6 +2,7 @@
 
 namespace Readability;
 
+use DOMElement;
 use Masterminds\HTML5;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -62,11 +63,45 @@ class Readability implements LoggerAwareInterface
     // removed by readability when put into paragraphs, so we ignore them here.
     public $phrasingElements = [
         // "CANVAS", "IFRAME", "SVG", "VIDEO",
-        'ABBR', 'AUDIO', 'B', 'BDO', 'BR', 'BUTTON', 'CITE', 'CODE', 'DATA',
-        'DATALIST', 'DFN', 'EM', 'EMBED', 'I', 'IMG', 'INPUT', 'KBD', 'LABEL',
-        'MARK', 'MATH', 'METER', 'NOSCRIPT', 'OBJECT', 'OUTPUT', 'PROGRESS', 'Q',
-        'RUBY', 'SAMP', 'SCRIPT', 'SELECT', 'SMALL', 'SPAN', 'STRONG', 'SUB',
-        'SUP', 'TEXTAREA', 'TIME', 'VAR', 'WBR',
+        'ABBR',
+        'AUDIO',
+        'B',
+        'BDO',
+        'BR',
+        'BUTTON',
+        'CITE',
+        'CODE',
+        'DATA',
+        'DATALIST',
+        'DFN',
+        'EM',
+        'EMBED',
+        'I',
+        'IMG',
+        'INPUT',
+        'KBD',
+        'LABEL',
+        'MARK',
+        'MATH',
+        'METER',
+        'NOSCRIPT',
+        'OBJECT',
+        'OUTPUT',
+        'PROGRESS',
+        'Q',
+        'RUBY',
+        'SAMP',
+        'SCRIPT',
+        'SELECT',
+        'SMALL',
+        'SPAN',
+        'STRONG',
+        'SUB',
+        'SUP',
+        'TEXTAREA',
+        'TIME',
+        'VAR',
+        'WBR',
     ];
     public $tidy_config = [
         'tidy-mark' => false,
@@ -934,7 +969,8 @@ class Readability implements LoggerAwareInterface
             // Remove unlikely candidates
             $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
 
-            if (mb_strlen($unlikelyMatchString) > 3 // don't process "empty" strings
+            if (
+                mb_strlen($unlikelyMatchString) > 3 // don't process "empty" strings
                 && preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString)
                 && !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
             ) {
@@ -1118,7 +1154,7 @@ class Readability implements LoggerAwareInterface
 
         $topCandidates = array_filter(
             $topCandidates,
-            fn ($v, $idx) => 0 === $idx || null !== $v,
+            fn($v, $idx) => 0 === $idx || null !== $v,
             \ARRAY_FILTER_USE_BOTH
         );
         $topCandidate = $topCandidates[0];
@@ -1253,7 +1289,8 @@ class Readability implements LoggerAwareInterface
                     $nodeLength = mb_strlen($nodeContent);
 
                     if (($nodeLength > self::MIN_NODE_LENGTH && $linkDensity < self::MAX_LINK_DENSITY)
-                        || ($nodeLength < self::MIN_NODE_LENGTH && 0 === $nodeLength && 0 === $linkDensity && preg_match('/\.( |$)/', $nodeContent))) {
+                        || ($nodeLength < self::MIN_NODE_LENGTH && 0 === $nodeLength && 0 === $linkDensity && preg_match('/\.( |$)/', $nodeContent))
+                    ) {
                         $append = true;
                     }
                 }
@@ -1465,7 +1502,7 @@ class Readability implements LoggerAwareInterface
                 && !\in_array(
                     false,
                     array_map(
-                        fn ($c) => $this->isPhrasingContent($c),
+                        fn($c) => $this->isPhrasingContent($c),
                         iterator_to_array($node->childNodes)
                     ),
                     true
@@ -1481,7 +1518,7 @@ class Readability implements LoggerAwareInterface
     private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
     {
         $childNodes = iterator_to_array($node->childNodes);
-        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof \DOMElement);
+        $children = array_filter($childNodes, fn($childNode) => $childNode instanceof \DOMElement);
 
         // There should be exactly 1 element child with given tag
         if (1 !== \count($children) || $children[0]->nodeName !== $tag) {
@@ -1490,7 +1527,7 @@ class Readability implements LoggerAwareInterface
 
         $a = array_filter(
             $childNodes,
-            fn ($childNode) => $childNode instanceof \DOMText && preg_match($this->regexps['hasContent'], $this->getInnerText($childNode))
+            fn($childNode) => $childNode instanceof \DOMText && preg_match($this->regexps['hasContent'], $this->getInnerText($childNode))
         );
 
         return 0 === \count($a);
@@ -1508,7 +1545,7 @@ class Readability implements LoggerAwareInterface
             $node->hasAttribute('style')
             && preg_match($this->regexps['isNotVisible'], $node->getAttribute('style'))
         )
-        && !$node->hasAttribute('hidden');
+            && !$node->hasAttribute('hidden');
     }
 
     /**
@@ -1550,5 +1587,151 @@ class Readability implements LoggerAwareInterface
 
         // Fallback – just plop the <meta> at the start of the fragment.
         return $charsetTag . $html;
+    }
+
+    /**
+     * Tries to get video urls
+     *
+     * @return array 
+     */
+    public function getVideos(): array
+    {
+        $videos = [];
+
+        // Create a DOMXPath to query the document
+        $xpath = new \DOMXPath($this->dom);
+
+        // Grab all nodes in one pass
+        // This finds <video>, <iframe>, <object>, <embed>, or <div data-facadesrc="...">
+        $videoNodes = $xpath->query("//video | //iframe | //object | //embed | //div[@data-facadesrc]");
+
+        foreach ($videoNodes as $node) {
+            // Decide which handler to call based on the tag name
+            $data = match ($node->nodeName) {
+                'video'  => $this->handleVideo($node),
+                'iframe' => $this->handleIframe($node),
+                'object' => $this->handleObject($node),
+                'embed'  => $this->handleEmbed($node),
+                'div'    => $this->handleDiv($node),
+                default  => null,
+            };
+
+            // If we got valid data back, assemble the final info
+            if ($data !== null) {
+                $videos[] = [
+                    'type' => $data['type'],
+                    'html' => $node->ownerDocument->saveHTML($node),
+                    'src'  => strtok($data['src'], '?'),
+                ];
+            }
+        }
+
+        return $videos;
+    }
+
+    /**
+     * Handle <video> nodes.
+     * @param DOMElement $video
+     * @return null|array
+     */
+    private function handleVideo(\DOMElement $video): ?array
+    {
+        // Check if <video> has a src attribute
+        $src = $video->getAttribute('src');
+
+        // If no direct src, look for <source> children
+        if (empty($src)) {
+            foreach ($video->getElementsByTagName('source') as $source) {
+                $tmp = $source->getAttribute('src');
+                if (!empty($tmp)) {
+                    $src = $tmp;
+                    break;
+                }
+            }
+        }
+
+        // If still no src, it’s not a valid video
+        if (empty($src)) {
+            return null;
+        }
+
+        return [
+            'type' => 'video',
+            'src'  => $src,
+        ];
+    }
+
+
+    /**
+     * Handle <iframe> nodes (YouTube, Vimeo, etc.).
+     * @param DOMElement $iframe
+     * @return null|array
+     */
+    private function handleIframe(\DOMElement $iframe): ?array
+    {
+        $src = $iframe->getAttribute('src');
+        // Check if the src matches known video hosts
+        if (preg_match($this->regexps['media'], $src)) {
+            return [
+                'type' => 'iframe',
+                'src'  => $src,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Handle <object> tags referencing video providers.
+     * @param DOMElement $object
+     * @return null|array
+     */
+    private function handleObject(\DOMElement $object): ?array
+    {
+        $data = $object->getAttribute('data');
+        if (preg_match($this->regexps['media'], $data)) {
+            return [
+                'type' => 'object',
+                'src'  => $data,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Handle <embed> tags referencing video providers.
+     * @param DOMElement $embed
+     * @return null|array
+     */
+    private function handleEmbed(\DOMElement $embed): ?array
+    {
+        $src = $embed->getAttribute('src');
+        if (preg_match($this->regexps['media'], $src)) {
+            return [
+                'type' => 'embed',
+                'src'  => $src,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Handle <div data-facadesrc="...">
+     * @param DOMElement $div 
+     * @return null|array 
+     */
+    private function handleDiv(\DOMElement $div): ?array
+    {
+        $facadeSrc = $div->getAttribute('data-facadesrc');
+        if (!empty($facadeSrc) && preg_match($this->regexps['media'], $facadeSrc)) {
+            return [
+                'type' => 'customDiv',
+                'src'  => $facadeSrc,
+            ];
+        }
+
+        return null;
     }
 }
