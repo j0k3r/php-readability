@@ -393,14 +393,17 @@ class Readability implements LoggerAwareInterface
         $this->clean($articleContent, 'object');
         $this->clean($articleContent, 'iframe');
         $this->clean($articleContent, 'canvas');
-        $this->clean($articleContent, 'h1');
 
         /*
-         * If there is only one h2, they are probably using it as a main header, so remove it since we
+         * If there is only one h1 or h2, they are probably using it as a main header, so remove it since we
          *  already have a header.
          */
+        $h1s = $articleContent->getElementsByTagName('h1');
+        if (1 === $h1s->length && mb_strlen($this->getInnerText($h1s->item(0), true, true)) < 100) {
+            $this->clean($articleContent, 'h1');
+        }
         $h2s = $articleContent->getElementsByTagName('h2');
-        if (1 === $h2s->length && mb_strlen($this->getInnerText($h2s->item(0), true, true)) < 100) {
+        if (0 === $h1s->length && 1 === $h2s->length && mb_strlen($this->getInnerText($h2s->item(0), true, true)) < 100) {
             $this->clean($articleContent, 'h2');
         }
 
