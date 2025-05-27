@@ -536,21 +536,21 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     {
         return [
             'meta' => [
-                '<html lang="fr"><head><meta charset="utf-8"></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                '<html lang="fr"><head><meta charset="utf-8"></head><body><article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article></body></html>',
                 'fr',
             ],
             'head' => [
-                '<html lang="fr"><head><title>Foo</title></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                '<html lang="fr"><head><title>Foo</title></head><body><article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article></body></html>',
                 'fr',
             ],
             'headless' => [
-                '<html lang="fr"><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                '<html lang="fr"><body><article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article></body></html>',
                 'fr',
                 // tidy would add <head> tag.
                 false,
             ],
             'fragment' => [
-                '<article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article>',
+                '<article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article>',
                 '',
                 // tidy would add <html>.
                 false,
@@ -569,6 +569,8 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($res);
         $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame($lang, $readability->dom->documentElement->getAttribute('lang'));
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertStringContainsString('êtres', $readability->getContent()->getInnerHtml());
     }
 
     private function getReadability(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
