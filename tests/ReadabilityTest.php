@@ -486,6 +486,20 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertStringContainsString('<a href="alice-I.html">Down the Rabbit-Hole</a>', $readability->getContent()->getInnerHtml());
     }
 
+    // https://github.com/wallabag/wallabag/issues/8158
+    public function testCharsetAfterTitle()
+    {
+        $readability = $this->getReadability('<!DOCTYPE html><html lang="et"><head><title>Tõde ja õigus I</title> <meta charset="utf-8"></head><body><p>See oli läinud aastasaja kolmanda veerandi lõpul. Päike lähenes silmapiirile, seistes sedavõrd madalas, et enam ei ulatunud valgustama ei mäkke ronivat hobust, kes puutelgedega vankrit vedas, ei vankril istuvat noort naist ega ka ligi kolmekümnelist meest, kes kõndis vankri kõrval.</p></body></html>', 'https://et.wikisource.org/wiki/T%C3%B5de_ja_%C3%B5igus_I/I');
+        $readability->convertLinksToFootnotes = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertSame('Tõde ja õigus I', $readability->getTitle()->getInnerHtml());
+        $this->assertStringContainsString('Päike lähenes', $readability->getContent()->getInnerHtml());
+    }
+
     /**
      * @return array<string, array{0: string, 1: string, 2?: bool}>
      */
