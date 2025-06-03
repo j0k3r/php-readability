@@ -529,6 +529,20 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         }
     }
 
+    // https://github.com/wallabag/wallabag/issues/8158
+    public function testCharsetAfterTitle(): void
+    {
+        $readability = $this->getReadability('<!DOCTYPE html><html lang="et"><head><title>Tõde ja õigus I</title> <meta charset="utf-8"></head><body><p>See oli läinud aastasaja kolmanda veerandi lõpul. Päike lähenes silmapiirile, seistes sedavõrd madalas, et enam ei ulatunud valgustama ei mäkke ronivat hobust, kes puutelgedega vankrit vedas, ei vankril istuvat noort naist ega ka ligi kolmekümnelist meest, kes kõndis vankri kõrval.</p></body></html>', 'https://et.wikisource.org/wiki/T%C3%B5de_ja_%C3%B5igus_I/I');
+        $readability->convertLinksToFootnotes = true;
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertSame('Tõde ja õigus I', $readability->getTitle()->getInnerHtml());
+        $this->assertStringContainsString('Päike lähenes', $readability->getContent()->getInnerHtml());
+    }
+
     /**
      * @return array<string, array{0: string, 1: string, 2?: bool}>
      */
@@ -536,21 +550,21 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     {
         return [
             'meta' => [
-                '<html lang="fr"><head><meta charset="utf-8"></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                '<html lang="fr"><head><meta charset="utf-8"></head><body><article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article></body></html>',
                 'fr',
             ],
             'head' => [
-                '<html lang="fr"><head><title>Foo</title></head><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                '<html lang="fr"><head><title>Foo</title></head><body><article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article></body></html>',
                 'fr',
             ],
             'headless' => [
-                '<html lang="fr"><body><article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article></body></html>',
+                '<html lang="fr"><body><article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article></body></html>',
                 'fr',
                 // tidy would add <head> tag.
                 false,
             ],
             'fragment' => [
-                '<article>' . str_repeat('<p>This is the awesome content :)</p>', 7) . '</article>',
+                '<article>' . str_repeat('<p>Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité.</p>', 7) . '</article>',
                 '',
                 // tidy would add <html>.
                 false,
@@ -569,6 +583,8 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($res);
         $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame($lang, $readability->dom->documentElement->getAttribute('lang'));
+        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertStringContainsString('êtres', $readability->getContent()->getInnerHtml());
     }
 
     private function getReadability(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
