@@ -88,7 +88,7 @@ class Readability implements LoggerAwareInterface
         'enclose-text' => true,
         'merge-divs' => true,
         // 'merge-spans' => true,
-        'input-encoding' => '????',
+        'input-encoding' => 'utf8',
         'output-encoding' => 'utf8',
         'hide-comments' => true,
     ];
@@ -1118,7 +1118,7 @@ class Readability implements LoggerAwareInterface
 
         $topCandidates = array_filter(
             $topCandidates,
-            fn ($v, $idx) => 0 === $idx || null !== $v,
+            static fn ($v, $idx) => 0 === $idx || null !== $v,
             \ARRAY_FILTER_USE_BOTH
         );
         $topCandidate = $topCandidates[0];
@@ -1481,7 +1481,7 @@ class Readability implements LoggerAwareInterface
     private function hasSingleTagInsideElement(\DOMElement $node, string $tag): bool
     {
         $childNodes = iterator_to_array($node->childNodes);
-        $children = array_filter($childNodes, fn ($childNode) => $childNode instanceof \DOMElement);
+        $children = array_filter($childNodes, static fn ($childNode) => $childNode instanceof \DOMElement);
 
         // There should be exactly 1 element child with given tag
         if (1 !== \count($children) || $children[0]->nodeName !== $tag) {
