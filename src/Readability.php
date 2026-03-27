@@ -118,7 +118,7 @@ class Readability implements LoggerAwareInterface
         'enclose-text' => true,
         'merge-divs' => true,
         // 'merge-spans' => true,
-        'input-encoding' => '????',
+        'input-encoding' => 'utf8',
         'output-encoding' => 'utf8',
         'hide-comments' => true,
     ];
