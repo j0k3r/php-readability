@@ -17,6 +17,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     public function testConstructDefault()
     {
         $readability = $this->getReadability('');
+        $this->assertSame('utf8', $readability->tidy_config['input-encoding']);
 
         $this->assertNull($readability->url);
         $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
