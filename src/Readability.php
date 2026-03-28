@@ -281,9 +281,75 @@ class Readability implements LoggerAwareInterface
      */
     public function postProcessContent(\DOMElement $articleContent): void
     {
+        $this->fixIncompleteURLs($articleContent);
         if ($this->convertLinksToFootnotes && !preg_match('/\bwiki/', $this->url)) {
             $this->addFootnotes($articleContent);
         }
+    }
+
+    private function parse_url($url): ?array{
+        $urlInfo = @parse_url($url);
+        if (false === $urlInfo) {
+            $this->logger->error('Failed to parse URL: ' . $url);
+            return NULL;
+        }
+
+        if (!isset($urlInfo['path'])) {
+            $urlInfo['path'] = '/';
+        }
+
+        // 构建基础URL和路径URL
+        $urlInfo['base_url'] = $urlInfo['scheme'] . '://' . $urlInfo['host'];
+        if (isset($urlInfo['port']) && $urlInfo['port'] && 80 !== $urlInfo['port'] && 443 !== $urlInfo['port']) {
+            $urlInfo['base_url'] .= ':' . $urlInfo['port'];
+        }
+
+        $urlInfo['path_url'] = $urlInfo['base_url'] . rtrim(dirname($urlInfo['path']), '/') . '/';
+
+        return $urlInfo;
+    }
+
+    /**
+     * Check and fix incomplete URLs in content.
+     */
+    public function fixIncompleteURLs($articleContent): void{
+        $urlInfo = $this->parse_url($this->url);
+        if (!$urlInfo || !isset($urlInfo['scheme'], $urlInfo['host'])) {
+            $this->logger->error('Invalid URL provided for post-processing: ' . $this->url);
+            return;
+        }
+        // Process all <a> and <img> elements to ensure their href/src attributes are complete URLs.
+        $this->processUrlElements($articleContent, 'a', 'href', $urlInfo);
+        $this->processUrlElements($articleContent, 'img', 'src', $urlInfo);
+    }
+
+    private function processUrlElements($articleContent, string $tagName, string $attribute, array $urlInfo): void{
+        $elements = $articleContent->getElementsByTagName($tagName);
+        for ($i = 0; $i < $elements->length; ++$i) {
+            $element      = $elements->item($i);
+            $url          = $element->getAttribute($attribute);
+            $completedUrl = $this->completeUrl($url, $urlInfo);
+            $element->setAttribute($attribute, $completedUrl);
+        }
+    }
+
+    private function completeUrl(string $url, array $urlInfo): string{
+        if (@parse_url($url, PHP_URL_HOST)) {
+            return $url;
+        }
+
+        if (strpos($url, '#') === 0 || strpos($url, 'javascript:') === 0) {
+            return $url;
+        }
+
+        if (strpos($url, '/') === 0) {
+            return $urlInfo['base_url'] . $url;
+        }
+
+        $result = $urlInfo['path_url'] . $url;
+        $result = preg_replace('/\/[^\/]+\/\.\.\//', '/', $result);
+        $result = preg_replace('/\/\.\//', '/', $result);
+        return $result;
     }
 
     /**
