@@ -213,7 +213,9 @@ class Readability implements LoggerAwareInterface
      */
     public function init(): bool
     {
-        $this->loadHtml();
+        if (!isset($this->dom)) {
+            $this->loadHtml();
+        }
 
         if (!isset($this->dom->documentElement)) {
             return false;
