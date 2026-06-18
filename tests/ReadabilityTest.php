@@ -464,6 +464,49 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($res);
     }
 
+    public function dataForHasSingleTagInsideElement(): array
+    {
+        return [
+            'single matching tag, no other content' => [
+                '<div><p>Some text</p></div>', 'p', true,
+            ],
+            'single matching tag with comment' => [
+                '<div><!-- comment --><p>Some text</p></div>', 'p', true,
+            ],
+            'whitespace-only text around single matching tag' => [
+                '<div>   <p>Some text</p>   </div>', 'p', true,
+            ],
+            'two matching tags' => [
+                '<div><p>One</p><p>Two</p></div>', 'p', false,
+            ],
+            'non-whitespace text alongside the single tag' => [
+                '<div>Some text<p>One</p></div>', 'p', false,
+            ],
+            'single tag with a different name' => [
+                '<div><span>One</span></div>', 'p', false,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider dataForHasSingleTagInsideElement
+     */
+    public function testHasSingleTagInsideElement(string $html, string $tag, bool $expected): void
+    {
+        $dom = new \DOMDocument();
+        $dom->loadHTML('<html><body>' . $html . '</body></html>');
+        $node = $dom->getElementsByTagName('div')->item(0);
+
+        $readability = $this->getReadability('', '', 'libxml', false);
+
+        $method = new \ReflectionMethod($readability, 'hasSingleTagInsideElement');
+        if (\PHP_VERSION_ID < 80100) {
+            $method->setAccessible(true);
+        }
+
+        $this->assertSame($expected, $method->invoke($readability, $node, $tag));
+    }
+
     public function testKeepFootnotes(): void
     {
         // from https://www.schreibdichte.de/blog/feed-aggregator-und-spaeter-lesen-dienst-im-team
