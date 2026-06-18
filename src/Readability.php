@@ -1380,7 +1380,7 @@ class Readability implements LoggerAwareInterface
      * Apply Pre filters
      * Cleanup HTML using Tidy (or not).
      */
-    private function loadHtml(): void
+    public function loadHtml(): void
     {
         $this->original_html = $this->html;
 
