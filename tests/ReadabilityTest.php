@@ -538,8 +538,8 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $res = $readability->init();
 
         $this->assertTrue($res);
-        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
-        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getTitle());
+        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
+        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getTitle());
         $this->assertSame('Tõde ja õigus I', $readability->getTitle()->getInnerHtml());
         $this->assertStringContainsString('Päike lähenes', $readability->getContent()->getInnerHtml());
     }
@@ -584,7 +584,7 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($res);
         $this->assertInstanceOf(\DOMDocument::class, $readability->dom);
         $this->assertSame($lang, $readability->dom->documentElement->getAttribute('lang'));
-        $this->assertInstanceOf('Readability\JSLikeHTMLElement', $readability->getContent());
+        $this->assertInstanceOf(JSLikeHTMLElement::class, $readability->getContent());
         $this->assertStringContainsString('êtres', $readability->getContent()->getInnerHtml());
     }
 
