@@ -30,7 +30,7 @@
         "masterminds/html5": "^2.7"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "3.94.2",
+        "friendsofphp/php-cs-fixer": "3.95.8",
         "monolog/monolog": "^1.24|^2.1",
         "symfony/phpunit-bridge": "^4.4|^5.3|^6.0|^7.0",
         "phpstan/phpstan": "2.2.2",
