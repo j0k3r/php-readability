@@ -30,6 +30,8 @@ return (new PhpCsFixer\Config())
         'modernize_strpos' => false,
         // Pulled in by @Symfony, we cannot add property types until we bump PHP to ≥ 7.4
         'no_null_property_initialization' => false,
+        // @Symfony:risky started removing them but we will probably want to go the opposite direction.
+        'declare_strict_types' => false,
     ])
     ->setFinder($finder)
 ;
