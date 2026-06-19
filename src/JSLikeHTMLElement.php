@@ -43,7 +43,7 @@ class JSLikeHTMLElement extends \DOMElement
      * $div->innerHTML = '<h2>Chapter 2</h2><p>The story begins...</p>';
      * ```
      */
-    public function __set($name, $value)
+    public function __set(string $name, string $value): void
     {
         if ('innerHTML' !== $name) {
             $trace = debug_backtrace();
@@ -108,7 +108,7 @@ class JSLikeHTMLElement extends \DOMElement
      * $string = $div->innerHTML;
      * ```
      */
-    public function __get($name)
+    public function __get(string $name): string
     {
         if ('innerHTML' === $name) {
             $inner = '';
@@ -124,20 +124,22 @@ class JSLikeHTMLElement extends \DOMElement
 
         $trace = debug_backtrace();
         trigger_error('Undefined property via __get(): ' . $name . ' in ' . $trace[0]['file'] . ' on line ' . $trace[0]['line'], \E_USER_NOTICE);
+
+        return '';
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return '[' . $this->tagName . ']';
     }
 
-    public function getInnerHtml()
+    public function getInnerHtml(): string
     {
         return $this->__get('innerHTML');
     }
 
-    public function setInnerHtml($value)
+    public function setInnerHtml(string $value): void
     {
-        return $this->__set('innerHTML', $value);
+        $this->__set('innerHTML', $value);
     }
 }
