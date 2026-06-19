@@ -46,6 +46,9 @@
     "autoload-dev": {
         "psr-4": { "Tests\\Readability\\": "tests/" }
     },
+    "config": {
+        "lock": false
+    },
     "scripts": {
         "fix": "php-cs-fixer fix --verbose --diff",
         "phpstan": "phpstan analyze --memory-limit 512M",
