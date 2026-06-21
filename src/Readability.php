@@ -1483,8 +1483,15 @@ class Readability implements LoggerAwareInterface
         $childNodes = iterator_to_array($node->childNodes);
         $children = array_filter($childNodes, static fn ($childNode) => $childNode instanceof \DOMElement);
 
+        // array_first() has been added in PHP 8.5, failing back for older versions
+        if (!\function_exists('array_first')) {
+            $firstChild = $children ? $children[array_key_first($children)] : null;
+        } else {
+            $firstChild = array_first($children);
+        }
+
         // There should be exactly 1 element child with given tag
-        if (1 !== \count($children) || $children[0]->nodeName !== $tag) {
+        if (1 !== \count($children) || $firstChild->nodeName !== $tag) {
             return false;
         }
 
