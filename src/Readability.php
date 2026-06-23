@@ -1003,7 +1003,11 @@ class Readability implements LoggerAwareInterface
                     }
 
                     if ($this->hasSingleTagInsideElement($node, 'p') && $this->getLinkDensity($node) < 0.25) {
-                        $newNode = $node->childNodes->item(0);
+                        // In some cases when tidy is disabled the first item may not be a DOMElement so we apply a filter
+                        $newNode = array_values(array_filter(
+                            iterator_to_array($node->childNodes),
+                            static fn ($childNode) => $childNode instanceof \DOMElement
+                        ))[0];
                         $node->parentNode->replaceChild($newNode, $node);
                         $nodesToScore[] = $newNode;
                     }

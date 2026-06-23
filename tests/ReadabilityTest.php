@@ -507,6 +507,19 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $method->invoke($readability, $node, $tag));
     }
 
+    public function testDivToPElementWithComment(): void
+    {
+        $text = str_repeat('Padded real article text to reach decent length for content scoring threshold here. ', 8);
+        $html = '<div><!-- comment --><code>some code snippet</code> ' . $text . '</div>';
+
+        $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', false);
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertStringContainsString('some code snippet', $readability->getContent()->getInnerHtml());
+        $this->assertStringContainsString('Padded real article text', $readability->getContent()->getInnerHtml());
+    }
+
     public function testKeepFootnotes(): void
     {
         // from https://www.schreibdichte.de/blog/feed-aggregator-und-spaeter-lesen-dienst-im-team
