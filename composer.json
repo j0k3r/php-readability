@@ -35,7 +35,7 @@
         "symfony/phpunit-bridge": "^4.4|^5.3|^6.0|^7.0",
         "phpstan/phpstan": "2.2.2",
         "phpstan/phpstan-phpunit": "2.0.16",
-        "rector/rector": "2.4.6"
+        "rector/rector": "2.5.2"
     },
     "suggest": {
         "ext-tidy": "Used to clean up given HTML and to avoid problems with bad HTML structure."
