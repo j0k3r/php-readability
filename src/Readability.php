@@ -213,7 +213,9 @@ class Readability implements LoggerAwareInterface
      */
     public function init(): bool
     {
-        $this->loadHtml();
+        if (!isset($this->dom)) {
+            $this->loadHtml();
+        }
 
         if (!isset($this->dom->documentElement)) {
             return false;
@@ -749,6 +751,76 @@ class Readability implements LoggerAwareInterface
     public function removeFlag(int $flag): void
     {
         $this->flags &= ~$flag;
+    }
+
+    /**
+     * Load HTML in a DOMDocument.
+     * Apply Pre filters
+     * Cleanup HTML using Tidy (or not).
+     */
+    public function loadHtml(): void
+    {
+        $this->original_html = $this->html;
+
+        $this->logger->debug('Parsing URL: ' . $this->url);
+
+        if ($this->url) {
+            $host = parse_url($this->url, \PHP_URL_HOST);
+            if (null !== $host) {
+                $this->domainRegExp = '/' . strtr((string) preg_replace('/www\d*\./', '', $host), ['.' => '\.']) . '/';
+            }
+        }
+
+        mb_internal_encoding('UTF-8');
+        mb_http_output('UTF-8');
+        mb_regex_encoding('UTF-8');
+
+        // HACK: dirty cleanup to replace some stuff; shouldn't use regexps with HTML but well...
+        if (!$this->flagIsActive(self::FLAG_DISABLE_PREFILTER)) {
+            foreach ($this->pre_filters as $search => $replace) {
+                $this->html = preg_replace($search, $replace, $this->html);
+            }
+            unset($search, $replace);
+        }
+
+        if ('' === trim($this->html)) {
+            $this->html = '<html></html>';
+        }
+
+        /*
+         * Use tidy (if it exists).
+         * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
+         * Although sometimes it makes matters worse, which is why there is an option to disable it.
+         */
+        if ($this->useTidy) {
+            $this->logger->debug('Tidying document');
+
+            $tidy = tidy_repair_string($this->html, $this->tidy_config, 'UTF8');
+            if (false !== $tidy && $this->html !== $tidy) {
+                $this->tidied = true;
+                $this->html = $tidy;
+                $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
+            }
+            unset($tidy);
+        }
+
+        $this->html = self::entitizeNonAscii((string) $this->html);
+
+        if ('html5lib' === $this->parser || 'html5' === $this->parser) {
+            $this->dom = (new HTML5())->loadHTML($this->html);
+        }
+
+        if ('libxml' === $this->parser) {
+            libxml_use_internal_errors(true);
+
+            $this->dom = new \DOMDocument();
+            $this->dom->preserveWhiteSpace = false;
+            $this->dom->loadHTML($this->html, \LIBXML_NOBLANKS | \LIBXML_COMPACT | \LIBXML_NOERROR);
+
+            libxml_use_internal_errors(false);
+        }
+
+        $this->dom->registerNodeClass(\DOMElement::class, JSLikeHTMLElement::class);
     }
 
     /**
@@ -1373,76 +1445,6 @@ class Readability implements LoggerAwareInterface
             $this->body = $this->dom->createElement('body');
             $this->body->setInnerHtml($this->bodyCache);
         }
-    }
-
-    /**
-     * Load HTML in a DOMDocument.
-     * Apply Pre filters
-     * Cleanup HTML using Tidy (or not).
-     */
-    private function loadHtml(): void
-    {
-        $this->original_html = $this->html;
-
-        $this->logger->debug('Parsing URL: ' . $this->url);
-
-        if ($this->url) {
-            $host = parse_url($this->url, \PHP_URL_HOST);
-            if (null !== $host) {
-                $this->domainRegExp = '/' . strtr((string) preg_replace('/www\d*\./', '', $host), ['.' => '\.']) . '/';
-            }
-        }
-
-        mb_internal_encoding('UTF-8');
-        mb_http_output('UTF-8');
-        mb_regex_encoding('UTF-8');
-
-        // HACK: dirty cleanup to replace some stuff; shouldn't use regexps with HTML but well...
-        if (!$this->flagIsActive(self::FLAG_DISABLE_PREFILTER)) {
-            foreach ($this->pre_filters as $search => $replace) {
-                $this->html = preg_replace($search, $replace, $this->html);
-            }
-            unset($search, $replace);
-        }
-
-        if ('' === trim($this->html)) {
-            $this->html = '<html></html>';
-        }
-
-        /*
-         * Use tidy (if it exists).
-         * This fixes problems with some sites which would otherwise trouble DOMDocument's HTML parsing.
-         * Although sometimes it makes matters worse, which is why there is an option to disable it.
-         */
-        if ($this->useTidy) {
-            $this->logger->debug('Tidying document');
-
-            $tidy = tidy_repair_string($this->html, $this->tidy_config, 'UTF8');
-            if (false !== $tidy && $this->html !== $tidy) {
-                $this->tidied = true;
-                $this->html = $tidy;
-                $this->html = preg_replace('/[\r\n]+/is', "\n", $this->html);
-            }
-            unset($tidy);
-        }
-
-        $this->html = self::entitizeNonAscii((string) $this->html);
-
-        if ('html5lib' === $this->parser || 'html5' === $this->parser) {
-            $this->dom = (new HTML5())->loadHTML($this->html);
-        }
-
-        if ('libxml' === $this->parser) {
-            libxml_use_internal_errors(true);
-
-            $this->dom = new \DOMDocument();
-            $this->dom->preserveWhiteSpace = false;
-            $this->dom->loadHTML($this->html, \LIBXML_NOBLANKS | \LIBXML_COMPACT | \LIBXML_NOERROR);
-
-            libxml_use_internal_errors(false);
-        }
-
-        $this->dom->registerNodeClass(\DOMElement::class, JSLikeHTMLElement::class);
     }
 
     private function getAncestors(\DOMElement $node, int $maxDepth = 0): array
