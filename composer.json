@@ -34,7 +34,7 @@
         "monolog/monolog": "^1.24|^2.1",
         "symfony/phpunit-bridge": "^4.4|^5.3|^6.0|^7.0",
         "phpstan/phpstan": "2.2.5",
-        "phpstan/phpstan-phpunit": "2.0.16",
+        "phpstan/phpstan-phpunit": "2.0.18",
         "rector/rector": "2.5.5"
     },
     "suggest": {
