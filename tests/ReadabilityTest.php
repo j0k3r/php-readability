@@ -644,6 +644,22 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertStringContainsString('êtres', $readability->getContent()->getInnerHtml());
     }
 
+    /**
+     * When all the text sits inside links, the top candidate's score is 0
+     * (content score × (1 − link density)); comparing the other candidates
+     * to it used to divide by zero.
+     */
+    public function testTopCandidateWithZeroScore(): void
+    {
+        $paragraph = '<p><a href="/story">' . str_repeat('Lorem ipsum dolor sit amet, consectetur adipiscing elit. ', 8) . '</a></p>';
+        $readability = $this->getReadability('<div>' . $paragraph . $paragraph . '</div>', 'http://0.0.0.0');
+
+        $res = $readability->init();
+
+        $this->assertTrue($res);
+        $this->assertStringContainsString('Lorem ipsum dolor sit amet', $readability->getContent()->getInnerHtml());
+    }
+
     private function getReadability(string $html, ?string $url = null, string $parser = 'libxml', bool $useTidy = true): Readability
     {
         $readability = new Readability($html, $url, $parser, $useTidy);

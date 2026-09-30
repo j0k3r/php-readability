@@ -1226,8 +1226,10 @@ class Readability implements LoggerAwareInterface
             $this->initializeNode($topCandidate);
         } elseif ($topCandidate) {
             $alternativeCandidateAncestors = [];
+            // A top candidate made only of links scores 0; nothing can be "close to" it, and dividing by it throws.
+            $topCandidateScore = (int) $topCandidate->getAttribute('readability');
             foreach ($topCandidates as $candidate) {
-                if ((int) $candidate->getAttribute('readability') / (int) $topCandidate->getAttribute('readability') >= 0.75) {
+                if (0 !== $topCandidateScore && (int) $candidate->getAttribute('readability') / $topCandidateScore >= 0.75) {
                     $ancestors = $this->getAncestors($candidate);
                     $this->logger->debug('Adding ' . \count($ancestors) . ' alternative ancestors for ' . $candidate->getNodePath());
                     $alternativeCandidateAncestors[] = $ancestors;
