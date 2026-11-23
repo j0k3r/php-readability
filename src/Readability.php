@@ -1159,6 +1159,10 @@ class Readability implements LoggerAwareInterface
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $item = $candidates->item($c);
 
+                if (!$item->hasAttribute('readability')) {
+                    continue;
+                }
+
                 // Scale the final candidates score based on link density. Good content should have a
                 // relatively small link density (5% or less) and be mostly unaffected by this operation.
                 // If not for this we would have used XPath to find maximum @readability.
