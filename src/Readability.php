@@ -147,6 +147,8 @@ class Readability implements LoggerAwareInterface
         // '!</?noscript>!is' => '',
         // replace fonts to spans
         '!<(/?)font[^>]*>!is' => '<\\1span>',
+        // keep the content of noframes, newer libxml versions read it as raw text
+        '!</?noframes[^>]*>!is' => '',
     ];
     // output HTML filters
     protected $post_filters = [
