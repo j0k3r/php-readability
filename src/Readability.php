@@ -844,11 +844,6 @@ class Readability implements LoggerAwareInterface
             if (\count(explode(' ', $curTitle)) < 3) {
                 $curTitle = preg_replace('/[^\|\-]*[\|\-](.*)/i', '$1', $origTitle);
             }
-        } elseif (false !== strpos($curTitle, ': ')) {
-            $curTitle = preg_replace('/.*:(.*)/i', '$1', $origTitle);
-            if (\count(explode(' ', $curTitle)) < 3) {
-                $curTitle = preg_replace('/[^:]*[:](.*)/i', '$1', $origTitle);
-            }
         } elseif (mb_strlen($curTitle) > 150 || mb_strlen($curTitle) < 15) {
             $hOnes = $this->dom->getElementsByTagName('h1');
             if (1 === $hOnes->length) {

@@ -351,6 +351,37 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertStringNotContainsString('This text is also an awesome text and you should know that', $readability->getContent()->getInnerHtml());
     }
 
+    public function dataForTitlesWithSeparators(): array
+    {
+        return [
+            'short colon title' => ['Guide: Advanced Setup', 'Guide: Advanced Setup'],
+            'long colon title' => ['Guide: Advanced setup for a production PHP application', 'Guide: Advanced setup for a production PHP application'],
+            'multiple colons' => ['Guide: PHP: Advanced setup for a production application', 'Guide: PHP: Advanced setup for a production application'],
+            'colon surrounded by spaces' => ['Entretien : Comprendre les subtilités des titres en français', 'Entretien : Comprendre les subtilités des titres en français'],
+            'time in title' => ['Meeting at 10:30: Notes from the engineering team', 'Meeting at 10:30: Notes from the engineering team'],
+            'unverified site name' => ['Example: An article title with enough words', 'Example: An article title with enough words'],
+            'dash suffix' => ['An article title with enough words - Example', 'An article title with enough words'],
+            'dash prefix' => ['Example - An article title with enough words', 'An article title with enough words'],
+            'pipe suffix' => ['An article title with enough words | Example', 'An article title with enough words'],
+            'pipe prefix' => ['Example | An article title with enough words', 'An article title with enough words'],
+            'colon with site suffix' => ['Guide: Advanced setup for a production PHP application | Example', 'Guide: Advanced setup for a production PHP application'],
+        ];
+    }
+
+    /**
+     * @dataProvider dataForTitlesWithSeparators
+     */
+    public function testTitleWithSeparators(string $title, string $expected): void
+    {
+        $html = '<html><head><title>' . $title . '</title></head><body><article>' . str_repeat('<p>This is an awesome text with some links, here there are the awesome details.</p>', 7) . '</article></body></html>';
+        foreach ([false, true] as $useTidy) {
+            $readability = $this->getReadability($html, 'http://0.0.0.0', 'libxml', $useTidy);
+
+            $this->assertTrue($readability->init());
+            $this->assertSame($expected, $readability->getTitle()->textContent);
+        }
+    }
+
     public function testTitleTooShortUseH1(): void
     {
         $readability = $this->getReadability('<title>too short</title><h1>this is my h1 title !</h1><article class="awesomecontent">' . str_repeat('<p>This is an awesome text with some links, here there are the awesome</p>', 7) . '<p></p></article>', 'http://0.0.0.0');
