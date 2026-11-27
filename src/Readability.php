@@ -1009,7 +1009,7 @@ class Readability implements LoggerAwareInterface
             $unlikelyMatchString = $node->getAttribute('class') . ' ' . $node->getAttribute('id') . ' ' . $node->getAttribute('style');
 
             if (mb_strlen($unlikelyMatchString) > 3 // don't process "empty" strings
-                && preg_match($this->regexps['unlikelyCandidates'], $unlikelyMatchString)
+                && $this->isUnlikelyCandidate($node, $unlikelyMatchString)
                 && !preg_match($this->regexps['okMaybeItsACandidate'], $unlikelyMatchString)
             ) {
                 $this->logger->debug('Removing unlikely candidate (using conf) ' . $node->getNodePath() . ' by "' . $unlikelyMatchString . '"');
@@ -1433,7 +1433,7 @@ class Readability implements LoggerAwareInterface
             if (preg_match($this->regexps['positive'], $attributeValue)) {
                 $weight += 25;
             }
-            if (preg_match($this->regexps['unlikelyCandidates'], $attributeValue)) {
+            if ($this->isUnlikelyCandidate($element, $attributeValue)) {
                 $weight -= 5;
             }
             if (preg_match($this->regexps['okMaybeItsACandidate'], $attributeValue)) {
@@ -1453,6 +1453,16 @@ class Readability implements LoggerAwareInterface
             $this->body = $this->dom->createElement('body');
             $this->body->setInnerHtml($this->bodyCache);
         }
+    }
+
+    private function isUnlikelyCandidate(\DOMElement $element, string $value): bool
+    {
+        // "header" describes section headings too, not just page navigation.
+        if (preg_match('/^h[1-6]$/i', $element->tagName)) {
+            $value = str_ireplace('header', '', $value);
+        }
+
+        return (bool) preg_match($this->regexps['unlikelyCandidates'], $value);
     }
 
     private function getAncestors(\DOMElement $node, int $maxDepth = 0): array
