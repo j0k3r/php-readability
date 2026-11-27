@@ -545,6 +545,16 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertStringContainsString('<a href="alice-I.html">Down the Rabbit-Hole</a>', $readability->getContent()->getInnerHtml());
     }
 
+    public function testWithExistingDataCandidate(): void
+    {
+        $text = str_repeat('This is a long paragraph of text, with commas, to score well. ', 8);
+        $html = '<html><body><article><p data-candidate="true">' . $text . '</p>' . str_repeat('<p>' . $text . '</p>', 5) . '</article></body></html>';
+
+        $readability = $this->getReadability($html, 'http://0.0.0.0');
+
+        $this->assertTrue($readability->init());
+    }
+
     public function dataForVisibleNode(): array
     {
         return [
