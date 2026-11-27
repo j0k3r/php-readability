@@ -147,6 +147,8 @@ class Readability implements LoggerAwareInterface
         // '!</?noscript>!is' => '',
         // replace fonts to spans
         '!<(/?)font[^>]*>!is' => '<\\1span>',
+        // keep the content of noframes, newer libxml versions read it as raw text
+        '!</?noframes[^>]*>!is' => '',
     ];
     // output HTML filters
     protected $post_filters = [
@@ -1158,6 +1160,10 @@ class Readability implements LoggerAwareInterface
 
             for ($c = $candidates->length - 1; $c >= 0; --$c) {
                 $item = $candidates->item($c);
+
+                if (!$item->hasAttribute('readability')) {
+                    continue;
+                }
 
                 // Scale the final candidates score based on link density. Good content should have a
                 // relatively small link density (5% or less) and be mostly unaffected by this operation.
