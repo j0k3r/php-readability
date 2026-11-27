@@ -158,6 +158,51 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
         $this->assertStringNotContainsString('<h2>', $readability->getContent()->getInnerHtml());
     }
 
+    public function dataForAnchoredHeadings(): array
+    {
+        return [
+            'libxml without tidy' => ['libxml', false, true],
+            'libxml with tidy' => ['libxml', true, true],
+            'html5 without tidy' => ['html5', false, true],
+            'html5 with tidy' => ['html5', true, true],
+            'libxml standard clean without tidy' => ['libxml', false, false],
+            'libxml standard clean with tidy' => ['libxml', true, false],
+            'html5 standard clean without tidy' => ['html5', false, false],
+            'html5 standard clean with tidy' => ['html5', true, false],
+        ];
+    }
+
+    /**
+     * @dataProvider dataForAnchoredHeadings
+     */
+    public function testKeepHeadingsWithAnchorWidgets(string $parser, bool $useTidy, bool $lightClean): void
+    {
+        $paragraphs = str_repeat('<p>This is an awesome text with enough article content, here there are the awesome details.</p>', 7);
+        $html = '<html><head><title>An article with anchored section headings</title></head><body><article>' . $paragraphs;
+        for ($level = 2; $level <= 6; ++$level) {
+            $html .= '<h' . $level . ' class="header-with-anchor-widget">Section ' . $level . ': A mental model of the software engineering cycle'
+                . '<div class="header-anchor-widget"><div class="header-anchor-widget-button" href="#section-' . $level . '"><svg xmlns="http://www.w3.org/2000/svg"><path d="M10 13"/></svg></div></div>'
+                . '</h' . $level . '>' . $paragraphs;
+        }
+        $html .= '<h2>Another important section</h2><div class="header">Page navigation</div><h3 class="header-sidebar">Related stories</h3><h2 hidden>Hidden section</h2></article></body></html>';
+        $readability = $this->getReadability($html, 'http://0.0.0.0', $parser, $useTidy);
+        $readability->lightClean = $lightClean;
+
+        $this->assertTrue($readability->init());
+
+        $content = $readability->getContent();
+        for ($level = 2; $level <= 6; ++$level) {
+            $heading = $content->getElementsByTagName('h' . $level)->item(0);
+            $this->assertInstanceOf(\DOMElement::class, $heading);
+            $this->assertSame('Section ' . $level . ': A mental model of the software engineering cycle', trim($heading->textContent));
+            $this->assertSame(0, $heading->getElementsByTagName('div')->length);
+        }
+        $this->assertStringNotContainsString('header-anchor-widget', $content->getInnerHtml());
+        $this->assertStringNotContainsString('Page navigation', $content->textContent);
+        $this->assertStringNotContainsString('Related stories', $content->textContent);
+        $this->assertStringNotContainsString('Hidden section', $content->textContent);
+    }
+
     public function testWithIframe(): void
     {
         $readability = $this->getReadability('<div><h2>Title</h2>' . str_repeat('<p>This is an awesome text with some links, here there are: <a href="http://0.0.0.0/test.html">the awesome</a></p>', 7) . '<p>This is an awesome text with some links, here there are <iframe src="http://youtube.com/test" href="#nofollow" rel="nofollow"></iframe><iframe>http://soundcloud.com/test</iframe></p></div>', 'http://0.0.0.0');
