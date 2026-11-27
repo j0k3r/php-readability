@@ -611,6 +611,40 @@ class ReadabilityTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public function dataForNonBmpUnicode(): iterable
+    {
+        foreach (['libxml', 'html5lib'] as $parser) {
+            yield $parser . ' without tidy' => [$parser, false];
+            yield $parser . ' with tidy' => [$parser, true];
+        }
+    }
+
+    /**
+     * @dataProvider dataForNonBmpUnicode
+     */
+    public function testNonBmpUnicodeIsPreserved(string $parser, bool $useTidy): void
+    {
+        if ($useTidy && !\function_exists('tidy_parse_string')) {
+            $this->markTestSkipped('Tidy extension is not available.');
+        }
+
+        $title = 'Readability preserves Unicode 🔒️ 💡 𠀀';
+        $text = 'Café déjà vu — 日本語 🔒️ Apple 💡 𠀀';
+        $readability = $this->getReadability(
+            '<html><head><title>' . $title . '</title></head><body><article>' . str_repeat('<p>' . $text . '</p>', 10) . '</article></body></html>',
+            'https://example.com/unicode',
+            $parser,
+            $useTidy
+        );
+
+        $this->assertTrue($readability->init());
+        $this->assertSame($title, $readability->getTitle()->textContent);
+        $this->assertStringContainsString($text, $readability->getContent()->textContent);
+    }
+
+    /**
      * @return array<string, array{0: string, 1: string, 2?: bool}>
      */
     public function dataForHtmlLang(): array
