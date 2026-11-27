@@ -1542,8 +1542,9 @@ class Readability implements LoggerAwareInterface
      */
     private static function entitizeNonAscii(string $html): string
     {
+        // The last value is a bitmask and must preserve all code point bits.
         $convmap = [
-            0x80, 0x1FFFFF, 0, 0x10FFFF,
+            0x80, 0x1FFFFF, 0, 0x1FFFFF,
         ];
 
         return mb_encode_numericentity($html, $convmap, 'utf8', true);
